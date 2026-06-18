@@ -1,4 +1,4 @@
-import { createSupabaseClient, hasSupabaseConfig } from "@/lib/supabase";
+import { createSupabaseClient, hasSupabaseConfig, hasSupabaseServiceRole } from "@/lib/supabase";
 import {
   mockAnnouncements,
   mockCategories,
@@ -71,12 +71,14 @@ export async function getPosts(filters: PostFilters = {}) {
 }
 
 export async function getAllAdminPosts() {
-  if (!hasSupabaseConfig()) {
-    return sortPosts(mockPosts);
+  if (!hasSupabaseServiceRole()) {
+    throw new Error("SUPABASE_SERVICE_ROLE_KEY is required to read admin posts.");
   }
 
-  const supabase = createSupabaseClient(true) ?? createSupabaseClient();
-  if (!supabase) return sortPosts(mockPosts);
+  const supabase = createSupabaseClient(true);
+  if (!supabase) {
+    throw new Error("Unable to create Supabase service role client for admin posts.");
+  }
 
   const { data, error } = await supabase
     .from("posts")
@@ -85,7 +87,7 @@ export async function getAllAdminPosts() {
 
   if (error || !data) {
     console.error("Failed to fetch admin posts", error);
-    return sortPosts(mockPosts);
+    throw new Error("Failed to fetch admin posts.");
   }
 
   return data as unknown as Post[];
@@ -116,7 +118,12 @@ export async function getComments(postId?: string, status: "pending" | "approved
     });
   }
 
-  const supabase = createSupabaseClient(true) ?? createSupabaseClient();
+  const needsServiceRole = status !== "approved";
+  if (needsServiceRole && !hasSupabaseServiceRole()) {
+    throw new Error("SUPABASE_SERVICE_ROLE_KEY is required to read non-approved comments.");
+  }
+
+  const supabase = createSupabaseClient(needsServiceRole);
   if (!supabase) return mockComments.filter((comment) => comment.status === status);
 
   let query = supabase.from("comments").select("*").eq("status", status);
@@ -135,18 +142,20 @@ export async function getComments(postId?: string, status: "pending" | "approved
 }
 
 export async function getAllAdminComments() {
-  if (!hasSupabaseConfig()) {
-    return [...mockComments].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+  if (!hasSupabaseServiceRole()) {
+    throw new Error("SUPABASE_SERVICE_ROLE_KEY is required to read admin comments.");
   }
 
-  const supabase = createSupabaseClient(true) ?? createSupabaseClient();
-  if (!supabase) return mockComments;
+  const supabase = createSupabaseClient(true);
+  if (!supabase) {
+    throw new Error("Unable to create Supabase service role client for admin comments.");
+  }
 
   const { data, error } = await supabase.from("comments").select("*").order("created_at", { ascending: false });
 
   if (error || !data) {
     console.error("Failed to fetch admin comments", error);
-    return mockComments;
+    throw new Error("Failed to fetch admin comments.");
   }
 
   return data as Comment[];
@@ -208,7 +217,11 @@ export async function getAnnouncements(activeOnly = true) {
     return mockAnnouncements.filter((announcement) => (activeOnly ? announcement.is_active : true));
   }
 
-  const supabase = createSupabaseClient(true) ?? createSupabaseClient();
+  if (!activeOnly && !hasSupabaseServiceRole()) {
+    throw new Error("SUPABASE_SERVICE_ROLE_KEY is required to read inactive announcements.");
+  }
+
+  const supabase = createSupabaseClient(!activeOnly);
   if (!supabase) return mockAnnouncements;
 
   let query = supabase.from("announcements").select("*");

@@ -4,13 +4,14 @@ import { PostFeed } from "@/components/post-feed";
 import { getComments, getPosts, getSchoolBySlug } from "@/lib/data";
 
 type SchoolWallPageProps = {
-  params: {
+  params: Promise<{
     slug: string;
-  };
+  }>;
 };
 
 export default async function SchoolWallPage({ params }: SchoolWallPageProps) {
-  const [school, comments] = await Promise.all([getSchoolBySlug(params.slug), getComments()]);
+  const resolvedParams = await params;
+  const [school, comments] = await Promise.all([getSchoolBySlug(resolvedParams.slug), getComments()]);
   if (!school) notFound();
 
   const posts = await getPosts({ schoolSlug: school.slug });
@@ -33,7 +34,8 @@ export default async function SchoolWallPage({ params }: SchoolWallPageProps) {
 }
 
 export async function generateMetadata({ params }: SchoolWallPageProps) {
-  const school = await getSchoolBySlug(params.slug);
+  const resolvedParams = await params;
+  const school = await getSchoolBySlug(resolvedParams.slug);
   return {
     title: school ? `${school.name} | 马来西亚留学生墙` : "学校信息墙"
   };

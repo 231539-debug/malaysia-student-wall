@@ -19,9 +19,9 @@ import { formatDate } from "@/lib/utils";
 import type { Comment, Post } from "@/types/wall";
 
 type AdminPageProps = {
-  searchParams: {
+  searchParams: Promise<{
     error?: string;
-  };
+  }>;
 };
 
 function AdminLogin({ error }: { error?: string }) {
@@ -48,6 +48,29 @@ function AdminLogin({ error }: { error?: string }) {
             进入后台
           </button>
         </form>
+      </div>
+    </section>
+  );
+}
+
+function AdminServiceRoleError() {
+  return (
+    <section className="container-page">
+      <div className="surface mx-auto mt-10 max-w-2xl rounded-3xl p-6 sm:p-8">
+        <div className="mb-4 flex items-center gap-3">
+          <span className="rounded-2xl bg-coral/10 p-3 text-coral">
+            <Lock className="h-5 w-5" aria-hidden="true" />
+          </span>
+          <div>
+            <h1 className="text-2xl font-black tracking-normal text-ink">后台配置缺失</h1>
+            <p className="mt-1 text-sm leading-6 text-muted">
+              /admin 需要配置 <code className="font-semibold text-ink">SUPABASE_SERVICE_ROLE_KEY</code> 才能读取和审核 pending 帖子/评论。
+            </p>
+          </div>
+        </div>
+        <p className="rounded-2xl bg-coral/10 px-4 py-3 text-sm font-semibold leading-6 text-coral">
+          请在本地 .env.local 或 Vercel Environment Variables 中补齐 SUPABASE_SERVICE_ROLE_KEY 后重新部署。
+        </p>
       </div>
     </section>
   );
@@ -117,8 +140,13 @@ function CommentModerationCard({ comment }: { comment: Comment }) {
 }
 
 export default async function AdminPage({ searchParams }: AdminPageProps) {
+  const resolvedSearchParams = await searchParams;
   if (!(await isAdminAuthenticated())) {
-    return <AdminLogin error={searchParams.error} />;
+    return <AdminLogin error={resolvedSearchParams.error} />;
+  }
+
+  if (!hasSupabaseServiceRole()) {
+    return <AdminServiceRoleError />;
   }
 
   const [posts, comments, announcements, schools, cities, categories] = await Promise.all([

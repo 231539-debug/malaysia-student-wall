@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Eye, MessageCircle, Pin } from "lucide-react";
+import { MessageCircle, Pin } from "lucide-react";
 import type { Post } from "@/types/wall";
 import { excerpt, formatDate } from "@/lib/utils";
 
@@ -42,10 +42,6 @@ export function PostCard({ post, commentsCount = 0 }: PostCardProps) {
             <span className="inline-flex items-center gap-1">
               <MessageCircle className="h-4 w-4" aria-hidden="true" />
               {commentsCount}
-            </span>
-            <span className="inline-flex items-center gap-1">
-              <Eye className="h-4 w-4" aria-hidden="true" />
-              {post.view_count}
             </span>
           </div>
         </div>

@@ -5,15 +5,16 @@ import { PostFeed } from "@/components/post-feed";
 import { getAnnouncements, getCategories, getCities, getComments, getPosts, getSchools } from "@/lib/data";
 
 type HomePageProps = {
-  searchParams: {
+  searchParams: Promise<{
     q?: string;
     category?: string;
     school?: string;
     city?: string;
-  };
+  }>;
 };
 
 export default async function HomePage({ searchParams }: HomePageProps) {
+  const resolvedSearchParams = await searchParams;
   const [categories, schools, cities, announcements, comments, posts] = await Promise.all([
     getCategories(),
     getSchools(),
@@ -21,10 +22,10 @@ export default async function HomePage({ searchParams }: HomePageProps) {
     getAnnouncements(),
     getComments(),
     getPosts({
-      search: searchParams.q,
-      categorySlug: searchParams.category,
-      schoolSlug: searchParams.school,
-      citySlug: searchParams.city
+      search: resolvedSearchParams.q,
+      categorySlug: resolvedSearchParams.category,
+      schoolSlug: resolvedSearchParams.school,
+      citySlug: resolvedSearchParams.city
     })
   ]);
 
@@ -44,7 +45,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
           </>
         }
       />
-      <FilterBar categories={categories} schools={schools} cities={cities} selected={searchParams} />
+      <FilterBar categories={categories} schools={schools} cities={cities} selected={resolvedSearchParams} />
       <AnnouncementStrip announcements={announcements} />
       <section className="container-page">
         <div className="mb-4 flex items-end justify-between gap-3">

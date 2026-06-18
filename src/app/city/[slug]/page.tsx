@@ -4,13 +4,14 @@ import { PostFeed } from "@/components/post-feed";
 import { getCityBySlug, getComments, getPosts } from "@/lib/data";
 
 type CityWallPageProps = {
-  params: {
+  params: Promise<{
     slug: string;
-  };
+  }>;
 };
 
 export default async function CityWallPage({ params }: CityWallPageProps) {
-  const [city, comments] = await Promise.all([getCityBySlug(params.slug), getComments()]);
+  const resolvedParams = await params;
+  const [city, comments] = await Promise.all([getCityBySlug(resolvedParams.slug), getComments()]);
   if (!city) notFound();
 
   const posts = await getPosts({ citySlug: city.slug });
@@ -32,7 +33,8 @@ export default async function CityWallPage({ params }: CityWallPageProps) {
 }
 
 export async function generateMetadata({ params }: CityWallPageProps) {
-  const city = await getCityBySlug(params.slug);
+  const resolvedParams = await params;
+  const city = await getCityBySlug(resolvedParams.slug);
   return {
     title: city ? `${city.name} | 马来西亚留学生墙` : "城市信息墙"
   };

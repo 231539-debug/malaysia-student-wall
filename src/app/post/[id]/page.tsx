@@ -6,17 +6,18 @@ import { getComments, getPostById } from "@/lib/data";
 import { formatDate } from "@/lib/utils";
 
 type PostDetailPageProps = {
-  params: {
+  params: Promise<{
     id: string;
-  };
-  searchParams: {
+  }>;
+  searchParams: Promise<{
     comment?: string;
     reported?: string;
-  };
+  }>;
 };
 
 export default async function PostDetailPage({ params, searchParams }: PostDetailPageProps) {
-  const post = await getPostById(params.id);
+  const [resolvedParams, resolvedSearchParams] = await Promise.all([params, searchParams]);
+  const post = await getPostById(resolvedParams.id);
   if (!post || post.status !== "approved") notFound();
 
   const comments = await getComments(post.id);
@@ -48,7 +49,6 @@ export default async function PostDetailPage({ params, searchParams }: PostDetai
               {post.category ? <span className="chip bg-coral/10 text-coral">{post.category.name}</span> : null}
               {post.school ? <span className="chip">{post.school.name}</span> : null}
               {post.city ? <span className="chip">{post.city.name}</span> : null}
-              <span className="chip">{post.view_count} 浏览</span>
             </div>
 
             <div className="whitespace-pre-wrap text-base leading-8 text-ink">{post.content}</div>
@@ -69,9 +69,14 @@ export default async function PostDetailPage({ params, searchParams }: PostDetai
               <MessageCircle className="h-5 w-5 text-sky" aria-hidden="true" />
               <h2 className="text-lg font-black tracking-normal">评论</h2>
             </div>
-            {searchParams.comment === "received" ? (
+            {resolvedSearchParams.comment === "received" ? (
               <p className="mb-4 rounded-2xl bg-mint/10 px-4 py-3 text-sm font-semibold text-mint">
                 评论已提交，审核通过后会展示。
+              </p>
+            ) : null}
+            {resolvedSearchParams.comment === "invalid" ? (
+              <p className="mb-4 rounded-2xl bg-coral/10 px-4 py-3 text-sm font-semibold text-coral">
+                评论长度不符合要求，请控制在 2-800 字之间。
               </p>
             ) : null}
             <div className="space-y-3">
@@ -88,8 +93,20 @@ export default async function PostDetailPage({ params, searchParams }: PostDetai
               )}
             </div>
             <form action={commentAction} className="mt-4 space-y-3">
-              <input name="author_name" placeholder="昵称，可匿名" className="field" />
-              <textarea name="content" required rows={4} placeholder="写下你的补充或提问，评论审核后展示" className="field resize-none" />
+              <input name="author_name" maxLength={40} placeholder="昵称，可匿名" className="field" />
+              <textarea
+                name="content"
+                required
+                minLength={2}
+                maxLength={800}
+                rows={4}
+                placeholder="写下你的补充或提问，评论审核后展示"
+                className="field resize-none"
+              />
+              <div className="hidden" aria-hidden="true">
+                <label htmlFor="comment-website">Website</label>
+                <input id="comment-website" name="website" type="text" tabIndex={-1} autoComplete="off" />
+              </div>
               <button className="button-primary w-full" type="submit">
                 <Send className="h-4 w-4" aria-hidden="true" />
                 提交评论
@@ -102,7 +119,7 @@ export default async function PostDetailPage({ params, searchParams }: PostDetai
               <Flag className="h-5 w-5 text-coral" aria-hidden="true" />
               <h2 className="text-lg font-black tracking-normal">举报</h2>
             </div>
-            {searchParams.reported === "1" ? (
+            {resolvedSearchParams.reported === "1" ? (
               <p className="mb-4 rounded-2xl bg-coral/10 px-4 py-3 text-sm font-semibold text-coral">
                 举报已收到，管理员会处理。
               </p>

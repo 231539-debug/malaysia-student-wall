@@ -4,13 +4,14 @@ import { PostFeed } from "@/components/post-feed";
 import { getCategoryBySlug, getComments, getPosts } from "@/lib/data";
 
 type CategoryPageProps = {
-  params: {
+  params: Promise<{
     slug: string;
-  };
+  }>;
 };
 
 export default async function CategoryPage({ params }: CategoryPageProps) {
-  const [category, comments] = await Promise.all([getCategoryBySlug(params.slug), getComments()]);
+  const resolvedParams = await params;
+  const [category, comments] = await Promise.all([getCategoryBySlug(resolvedParams.slug), getComments()]);
   if (!category) notFound();
 
   const posts = await getPosts({ categorySlug: category.slug });
@@ -32,7 +33,8 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
 }
 
 export async function generateMetadata({ params }: CategoryPageProps) {
-  const category = await getCategoryBySlug(params.slug);
+  const resolvedParams = await params;
+  const category = await getCategoryBySlug(resolvedParams.slug);
   return {
     title: category ? `${category.name} | 马来西亚留学生墙` : "分类信息墙"
   };

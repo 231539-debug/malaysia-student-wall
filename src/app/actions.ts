@@ -4,6 +4,14 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createSupabaseClient, hasSupabaseServiceRole } from "@/lib/supabase";
 
+const HONEYPOT_FIELD = "website";
+const POST_TITLE_MIN_LENGTH = 4;
+const POST_TITLE_MAX_LENGTH = 80;
+const POST_CONTENT_MIN_LENGTH = 10;
+const POST_CONTENT_MAX_LENGTH = 4000;
+const COMMENT_MIN_LENGTH = 2;
+const COMMENT_MAX_LENGTH = 800;
+
 function stringValue(formData: FormData, key: string) {
   const value = formData.get(key);
   return typeof value === "string" ? value.trim() : "";
@@ -25,10 +33,19 @@ function imageUrlsFromForm(formData: FormData) {
 }
 
 export async function submitPost(formData: FormData) {
+  if (stringValue(formData, HONEYPOT_FIELD)) {
+    redirect("/submit?submitted=1");
+  }
+
   const title = stringValue(formData, "title");
   const content = stringValue(formData, "content");
 
-  if (!title || !content) {
+  if (
+    title.length < POST_TITLE_MIN_LENGTH ||
+    title.length > POST_TITLE_MAX_LENGTH ||
+    content.length < POST_CONTENT_MIN_LENGTH ||
+    content.length > POST_CONTENT_MAX_LENGTH
+  ) {
     redirect("/submit?error=missing");
   }
 
@@ -60,9 +77,17 @@ export async function submitPost(formData: FormData) {
 }
 
 export async function submitComment(postId: string, formData: FormData) {
+  if (stringValue(formData, HONEYPOT_FIELD)) {
+    redirect(`/post/${postId}?comment=received`);
+  }
+
   const content = stringValue(formData, "content");
 
-  if (content && hasSupabaseServiceRole()) {
+  if (content.length < COMMENT_MIN_LENGTH || content.length > COMMENT_MAX_LENGTH) {
+    redirect(`/post/${postId}?comment=invalid`);
+  }
+
+  if (hasSupabaseServiceRole()) {
     const supabase = createSupabaseClient(true);
     const { error } =
       (await supabase?.from("comments").insert({
