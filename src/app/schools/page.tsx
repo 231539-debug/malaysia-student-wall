@@ -15,8 +15,6 @@ export default async function SchoolsPage() {
         eyebrow="Schools"
         title="学校列表"
         description="按学校类型浏览马来西亚常见留学院校，进入对应信息墙后可以查看租房、二手、课程、新生求助和生活互助信息。"
-        actionHref="/submit"
-        actionLabel="发布学校信息"
       />
       <section className="container-page space-y-5">
         {groupOrder.map((group) => {

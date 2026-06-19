@@ -78,6 +78,9 @@ export const mockPosts: Post[] = [
     contact_info: "WeChat: example",
     is_anonymous: false,
     status: "approved",
+    risk_level: "medium",
+    moderation_note: "命中需留意关键词：押金。",
+    report_count: 0,
     is_pinned: true,
     view_count: 268,
     image_urls: [
@@ -101,6 +104,9 @@ export const mockPosts: Post[] = [
     contact_info: null,
     is_anonymous: true,
     status: "approved",
+    risk_level: "low",
+    moderation_note: null,
+    report_count: 0,
     is_pinned: false,
     view_count: 143,
     image_urls: null,
@@ -122,6 +128,9 @@ export const mockPosts: Post[] = [
     contact_info: null,
     is_anonymous: false,
     status: "approved",
+    risk_level: "high",
+    moderation_note: "建议谨慎审核，可能涉及违规内容。命中关键词：银行卡。",
+    report_count: 0,
     is_pinned: false,
     view_count: 91,
     image_urls: null,
@@ -143,6 +152,9 @@ export const mockPosts: Post[] = [
     contact_info: "Telegram: example",
     is_anonymous: false,
     status: "approved",
+    risk_level: "low",
+    moderation_note: null,
+    report_count: 0,
     is_pinned: false,
     view_count: 205,
     image_urls: [
@@ -166,6 +178,9 @@ export const mockPosts: Post[] = [
     contact_info: null,
     is_anonymous: true,
     status: "approved",
+    risk_level: "low",
+    moderation_note: null,
+    report_count: 0,
     is_pinned: false,
     view_count: 74,
     image_urls: null,
@@ -184,6 +199,8 @@ export const mockComments: Comment[] = [
     author_name: "小陈",
     content: "请问房间有独立卫浴吗？",
     status: "approved",
+    risk_level: "low",
+    moderation_note: null,
     created_at: daysAgo(0)
   },
   {
@@ -192,6 +209,8 @@ export const mockComments: Comment[] = [
     author_name: "Freshman",
     content: "这个很有用，感谢分享。",
     status: "approved",
+    risk_level: "low",
+    moderation_note: null,
     created_at: daysAgo(1)
   },
   {
@@ -200,6 +219,8 @@ export const mockComments: Comment[] = [
     author_name: "Admin test",
     content: "这条是待审核评论示例。",
     status: "pending",
+    risk_level: "low",
+    moderation_note: null,
     created_at: daysAgo(0)
   }
 ];

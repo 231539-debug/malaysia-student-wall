@@ -28,9 +28,13 @@ NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
 SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
 ADMIN_PASSWORD=change-this-admin-password
+ADMIN_NOTIFY_EMAIL=admin@example.com
+NOTIFICATION_WEBHOOK_URL=
 ```
 
 `SUPABASE_SERVICE_ROLE_KEY` 只在服务端使用，用于投稿写入、评论写入和后台审核。不要暴露到浏览器端。
+
+`NOTIFICATION_WEBHOOK_URL` 是可选的新投稿通知 webhook。未配置时不会发送通知，也不会影响投稿功能。
 
 ## Supabase 初始化
 
@@ -81,6 +85,8 @@ ADMIN_PASSWORD=change-this-admin-password
 6. 部署即可。
 
 如果线上 Supabase 数据库已经执行过 `001_initial_schema.sql`，后续补学校和城市数据时，请在 Supabase SQL Editor 执行 `supabase/migrations/002_upsert_schools_and_cities.sql`。
+上线后如果需要启用风险等级、举报次数和审核提示字段，请继续执行 `supabase/migrations/003_add_moderation_assist_fields.sql`。
+如果需要启用本地图片上传，请继续执行 `supabase/migrations/004_create_post_images_bucket.sql` 创建公开的 `post-images` Storage bucket。
 
 ## 当前 MVP 说明
 

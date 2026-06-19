@@ -1,4 +1,5 @@
 export type ModerationStatus = "pending" | "approved" | "rejected";
+export type RiskLevel = "low" | "medium" | "high";
 
 export type School = {
   id: string;
@@ -35,6 +36,9 @@ export type Post = {
   contact_info: string | null;
   is_anonymous: boolean;
   status: ModerationStatus;
+  risk_level: RiskLevel;
+  moderation_note: string | null;
+  report_count: number;
   is_pinned: boolean;
   view_count: number;
   image_urls: string[] | null;
@@ -51,6 +55,8 @@ export type Comment = {
   author_name: string | null;
   content: string;
   status: ModerationStatus;
+  risk_level: RiskLevel;
+  moderation_note: string | null;
   created_at: string;
 };
 

@@ -2,7 +2,10 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { assessContentRisk } from "@/lib/moderation";
+import { adminReviewUrl, sendNewPostNotification } from "@/lib/notifications";
 import { createSupabaseClient, hasSupabaseServiceRole } from "@/lib/supabase";
+import { excerpt } from "@/lib/utils";
 
 const HONEYPOT_FIELD = "website";
 const POST_TITLE_MIN_LENGTH = 4;
@@ -11,6 +14,10 @@ const POST_CONTENT_MIN_LENGTH = 10;
 const POST_CONTENT_MAX_LENGTH = 4000;
 const COMMENT_MIN_LENGTH = 2;
 const COMMENT_MAX_LENGTH = 800;
+const POST_IMAGE_BUCKET = "post-images";
+const MAX_POST_IMAGES = 4;
+const MAX_POST_IMAGE_SIZE = 5 * 1024 * 1024;
+const ALLOWED_POST_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"];
 
 function stringValue(formData: FormData, key: string) {
   const value = formData.get(key);
@@ -32,6 +39,57 @@ function imageUrlsFromForm(formData: FormData) {
     .filter(Boolean);
 }
 
+function imageFilesFromForm(formData: FormData) {
+  return formData.getAll("images").filter((value): value is File => value instanceof File && value.size > 0);
+}
+
+function extensionForImageType(type: string) {
+  if (type === "image/png") return "png";
+  if (type === "image/webp") return "webp";
+  return "jpg";
+}
+
+function validateImageFiles(files: File[]) {
+  if (files.length > MAX_POST_IMAGES) return false;
+
+  return files.every((file) => file.size <= MAX_POST_IMAGE_SIZE && ALLOWED_POST_IMAGE_TYPES.includes(file.type));
+}
+
+function isMissingModerationColumn(error: unknown) {
+  if (!error || typeof error !== "object" || !("message" in error)) return false;
+  const message = String(error.message);
+  return /risk_level|moderation_note|report_count/.test(message);
+}
+
+async function uploadPostImages(postId: string, files: File[]) {
+  if (!files.length) return null;
+  if (!validateImageFiles(files)) redirect("/submit?error=image");
+
+  const supabase = createSupabaseClient(true);
+  if (!supabase) redirect("/submit?error=image");
+
+  const uploadedUrls: string[] = [];
+
+  for (const file of files) {
+    const extension = extensionForImageType(file.type);
+    const path = `posts/${postId}/${Date.now()}-${crypto.randomUUID()}.${extension}`;
+    const { error } = await supabase.storage.from(POST_IMAGE_BUCKET).upload(path, file, {
+      contentType: file.type,
+      upsert: false
+    });
+
+    if (error) {
+      console.error("Failed to upload post image", error);
+      redirect("/submit?error=image");
+    }
+
+    const { data } = supabase.storage.from(POST_IMAGE_BUCKET).getPublicUrl(path);
+    if (data.publicUrl) uploadedUrls.push(data.publicUrl);
+  }
+
+  return uploadedUrls.length ? uploadedUrls : null;
+}
+
 export async function submitPost(formData: FormData) {
   if (stringValue(formData, HONEYPOT_FIELD)) {
     redirect("/submit?submitted=1");
@@ -51,25 +109,61 @@ export async function submitPost(formData: FormData) {
 
   if (hasSupabaseServiceRole()) {
     const supabase = createSupabaseClient(true);
+    const risk = assessContentRisk(title, content);
+    const postId = crypto.randomUUID();
+    const uploadedImageUrls = await uploadPostImages(postId, imageFilesFromForm(formData));
+    const categoryId = nullableValue(formData, "category_id");
+    const schoolId = nullableValue(formData, "school_id");
+    const cityId = nullableValue(formData, "city_id");
+    const authorName = nullableValue(formData, "author_name");
+    const contactInfo = nullableValue(formData, "contact_info");
+    const basePayload = {
+      id: postId,
+      title,
+      content,
+      category_id: categoryId,
+      school_id: schoolId,
+      city_id: cityId,
+      author_name: authorName,
+      contact_info: contactInfo,
+      is_anonymous: formData.get("is_anonymous") === "on",
+      status: "pending" as const,
+      image_urls: uploadedImageUrls ?? imageUrlsFromForm(formData)
+    };
 
-    const { error } =
+    const [categoryResult, schoolResult, cityResult] = await Promise.all([
+      categoryId ? supabase?.from("categories").select("name").eq("id", categoryId).single() : Promise.resolve(null),
+      schoolId ? supabase?.from("schools").select("name").eq("id", schoolId).single() : Promise.resolve(null),
+      cityId ? supabase?.from("cities").select("name").eq("id", cityId).single() : Promise.resolve(null)
+    ]);
+
+    let { error } =
       (await supabase?.from("posts").insert({
-        title,
-        content,
-        category_id: nullableValue(formData, "category_id"),
-        school_id: nullableValue(formData, "school_id"),
-        city_id: nullableValue(formData, "city_id"),
-        author_name: nullableValue(formData, "author_name"),
-        contact_info: nullableValue(formData, "contact_info"),
-        is_anonymous: formData.get("is_anonymous") === "on",
-        status: "pending",
-        image_urls: imageUrlsFromForm(formData)
+        ...basePayload,
+        risk_level: risk.level,
+        moderation_note: risk.note,
+        report_count: 0
       })) ?? {};
+
+    if (error && isMissingModerationColumn(error)) {
+      ({ error } = (await supabase?.from("posts").insert(basePayload)) ?? {});
+    }
 
     if (error) {
       console.error("Failed to submit post", error);
       redirect("/submit?error=server");
     }
+
+    await sendNewPostNotification({
+      title,
+      category: categoryResult?.data?.name ?? "未选择",
+      school: schoolResult?.data?.name ?? "不限学校",
+      city: cityResult?.data?.name ?? "不限城市",
+      authorName: authorName ?? "未填写",
+      contactInfo: contactInfo ?? "未填写",
+      excerpt: excerpt(content, 180),
+      adminUrl: adminReviewUrl()
+    });
   }
 
   revalidatePath("/");
@@ -89,13 +183,29 @@ export async function submitComment(postId: string, formData: FormData) {
 
   if (hasSupabaseServiceRole()) {
     const supabase = createSupabaseClient(true);
-    const { error } =
+    const risk = assessContentRisk("", content);
+    const commentPayload = {
+      post_id: postId,
+      author_name: nullableValue(formData, "author_name"),
+      content,
+      status: "pending" as const
+    };
+    let { error } =
       (await supabase?.from("comments").insert({
-        post_id: postId,
-        author_name: nullableValue(formData, "author_name"),
-        content,
-        status: "pending"
+        ...commentPayload,
+        risk_level: risk.level,
+        moderation_note: risk.note
       })) ?? {};
+
+    if (error && isMissingModerationColumn(error)) {
+      ({ error } =
+        (await supabase?.from("comments").insert({
+          post_id: postId,
+          author_name: nullableValue(formData, "author_name"),
+          content,
+          status: "pending"
+        })) ?? {});
+    }
 
     if (error) {
       console.error("Failed to submit comment", error);
@@ -119,6 +229,40 @@ export async function reportPost(postId: string, formData: FormData) {
 
     if (error) {
       console.error("Failed to submit report", error);
+    } else {
+      const { data: post } =
+        (await supabase
+          ?.from("posts")
+          .select("status, report_count, moderation_note")
+          .eq("id", postId)
+          .single()) ?? {};
+
+      if (post) {
+        const nextReportCount = (post.report_count ?? 0) + 1;
+        const repeatedReportNote = "该帖子被多次举报，已自动隐藏等待复审。";
+        const moderationNote =
+          nextReportCount >= 3 && !post.moderation_note?.includes(repeatedReportNote)
+            ? [post.moderation_note, repeatedReportNote].filter(Boolean).join("\n")
+            : post.moderation_note;
+
+        const { error: updateError } =
+          (await supabase
+            ?.from("posts")
+            .update({
+              report_count: nextReportCount,
+              status: nextReportCount >= 3 && post.status === "approved" ? "pending" : post.status,
+              moderation_note: moderationNote
+            })
+            .eq("id", postId)) ?? {};
+
+        if (updateError) {
+          console.error("Failed to update report count", updateError);
+        } else {
+          revalidatePath("/admin");
+          revalidatePath("/");
+          revalidatePath(`/post/${postId}`);
+        }
+      }
     }
   }
 

@@ -17,14 +17,16 @@ import { isAdminAuthenticated } from "@/lib/admin-auth";
 import { getAllAdminComments, getAllAdminPosts, getAnnouncements, getCategories, getCities, getSchools } from "@/lib/data";
 import { hasSupabaseServiceRole } from "@/lib/supabase";
 import { excerpt, formatDate } from "@/lib/utils";
-import type { Comment, ModerationStatus, Post } from "@/types/wall";
+import type { Comment, ModerationStatus, Post, RiskLevel } from "@/types/wall";
 
 type AdminPostStatus = ModerationStatus | "all";
+type AdminRiskFilter = RiskLevel | "all";
 
 type AdminPageProps = {
   searchParams: Promise<{
     error?: string;
     status?: string;
+    risk?: string;
     q?: string;
   }>;
 };
@@ -36,12 +38,27 @@ const statusOptions: Array<{ label: string; value: AdminPostStatus }> = [
   { label: "全部", value: "all" }
 ];
 
+const riskOptions: Array<{ label: string; value: AdminRiskFilter }> = [
+  { label: "全部风险", value: "all" },
+  { label: "low", value: "low" },
+  { label: "medium", value: "medium" },
+  { label: "high", value: "high" }
+];
+
 function normalizeStatus(status?: string): AdminPostStatus {
   if (status === "approved" || status === "rejected" || status === "all") {
     return status;
   }
 
   return "pending";
+}
+
+function normalizeRisk(risk?: string): AdminRiskFilter {
+  if (risk === "low" || risk === "medium" || risk === "high") {
+    return risk;
+  }
+
+  return "all";
 }
 
 function statusLabel(status: ModerationStatus) {
@@ -54,9 +71,22 @@ function statusLabel(status: ModerationStatus) {
   return labels[status];
 }
 
-function adminListHref(status: AdminPostStatus, q?: string) {
+function riskBadgeClass(riskLevel?: RiskLevel) {
+  if (riskLevel === "high") return "chip bg-coral/10 text-coral";
+  if (riskLevel === "medium") return "chip bg-mango/20 text-ink";
+  return "chip bg-mint/10 text-mint";
+}
+
+function riskPanelClass(riskLevel?: RiskLevel) {
+  if (riskLevel === "high") return "border-coral/20 bg-coral/10 text-coral";
+  if (riskLevel === "medium") return "border-mango/40 bg-mango/10 text-ink";
+  return "border-black/5 bg-stone-50 text-muted";
+}
+
+function adminListHref(status: AdminPostStatus, q?: string, risk: AdminRiskFilter = "all") {
   const params = new URLSearchParams();
   params.set("status", status);
+  params.set("risk", risk);
   if (q) params.set("q", q);
   return `/admin?${params.toString()}`;
 }
@@ -114,13 +144,17 @@ function AdminServiceRoleError() {
 }
 
 function PostModerationCard({ post }: { post: Post }) {
+  const riskLevel = post.risk_level ?? "low";
+
   return (
     <article className="rounded-3xl border border-black/5 bg-white p-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
             <span className="chip">{statusLabel(post.status)}</span>
+            <span className={riskBadgeClass(riskLevel)}>风险 {riskLevel}</span>
             {post.is_pinned ? <span className="chip bg-mango/10 text-ink">已置顶</span> : null}
+            {(post.report_count ?? 0) > 0 ? <span className="chip bg-coral/10 text-coral">举报 {post.report_count}</span> : null}
           </div>
           <h3 className="mt-3 text-base font-black tracking-normal text-ink">{post.title}</h3>
           <p className="mt-2 line-clamp-3 text-sm leading-6 text-muted">{excerpt(post.content, 140)}</p>
@@ -134,6 +168,20 @@ function PostModerationCard({ post }: { post: Post }) {
         {post.city ? <span className="chip">{post.city.name}</span> : null}
       </div>
 
+      {post.image_urls?.length ? (
+        <div className="mt-4">
+          <p className="mb-2 text-xs font-black text-ink">投稿图片</p>
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+            {post.image_urls.map((url) => (
+              <a key={url} href={url} target="_blank" rel="noreferrer" className="block aspect-square overflow-hidden rounded-2xl bg-stone-100">
+                <img src={url} alt="" className="h-full w-full object-cover" />
+              </a>
+            ))}
+          </div>
+          <p className="mt-2 text-xs font-semibold leading-5 text-coral">图片需人工确认，避免虚假房源图、盗图、隐私曝光。</p>
+        </div>
+      ) : null}
+
       <dl className="mt-4 grid gap-2 rounded-2xl bg-stone-50 p-3 text-xs leading-5 sm:grid-cols-2">
         <div>
           <dt className="font-black text-ink">联系方式</dt>
@@ -143,7 +191,16 @@ function PostModerationCard({ post }: { post: Post }) {
           <dt className="font-black text-ink">作者</dt>
           <dd className="mt-1 font-semibold text-muted">{post.is_anonymous ? "匿名展示" : post.author_name || "未填写"}</dd>
         </div>
+        <div>
+          <dt className="font-black text-ink">举报次数</dt>
+          <dd className="mt-1 font-semibold text-muted">{post.report_count ?? 0}</dd>
+        </div>
       </dl>
+
+      <div className={`mt-3 rounded-2xl border px-4 py-3 text-xs font-semibold leading-5 ${riskPanelClass(riskLevel)}`}>
+        <p className="font-black">风险等级：{riskLevel}</p>
+        <p className="mt-1">{post.moderation_note || "暂无额外审核提示。"}</p>
+      </div>
 
       <div className="mt-4 grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
         <form action={updatePostStatus.bind(null, post.id, "approved")}>
@@ -179,12 +236,18 @@ function PostModerationCard({ post }: { post: Post }) {
 }
 
 function CommentModerationCard({ comment }: { comment: Comment }) {
+  const riskLevel = comment.risk_level ?? "low";
+
   return (
     <article className="rounded-3xl border border-black/5 bg-white p-4">
       <div className="flex items-start justify-between gap-3">
         <div>
           <p className="text-sm font-black text-ink">{comment.author_name || "匿名同学"}</p>
           <p className="mt-1 text-sm leading-6 text-muted">{comment.content}</p>
+          <div className={`mt-3 rounded-2xl border px-3 py-2 text-xs font-semibold leading-5 ${riskPanelClass(riskLevel)}`}>
+            <p className="font-black">风险等级：{riskLevel}</p>
+            <p className="mt-1">{comment.moderation_note || "暂无额外审核提示。"}</p>
+          </div>
         </div>
         <span className="chip">{statusLabel(comment.status)}</span>
       </div>
@@ -220,6 +283,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
   }
 
   const selectedStatus = normalizeStatus(resolvedSearchParams.status);
+  const selectedRisk = normalizeRisk(resolvedSearchParams.risk);
   const keyword = resolvedSearchParams.q?.trim() ?? "";
 
   const [posts, comments, announcements, schools, cities, categories] = await Promise.all([
@@ -238,9 +302,16 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
     rejected: posts.filter((post) => post.status === "rejected").length,
     all: posts.length
   };
+  const riskCounts: Record<AdminRiskFilter, number> = {
+    all: posts.length,
+    low: posts.filter((post) => (post.risk_level ?? "low") === "low").length,
+    medium: posts.filter((post) => post.risk_level === "medium").length,
+    high: posts.filter((post) => post.risk_level === "high").length
+  };
 
   const filteredPosts = posts.filter((post) => {
     if (selectedStatus !== "all" && post.status !== selectedStatus) return false;
+    if (selectedRisk !== "all" && (post.risk_level ?? "low") !== selectedRisk) return false;
     if (!keyword) return true;
 
     const haystack = `${post.title} ${post.content}`.toLowerCase();
@@ -269,7 +340,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
         <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
           <div>
             <h2 className="text-xl font-black tracking-normal text-ink">帖子管理</h2>
-            <p className="mt-1 text-sm font-semibold text-muted">按状态筛选，或搜索标题和内容。</p>
+            <p className="mt-1 text-sm font-semibold text-muted">按状态和风险筛选，或搜索标题和内容。</p>
           </div>
           <span className="chip">{filteredPosts.length} 条</span>
         </div>
@@ -278,7 +349,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
           {statusOptions.map((option) => (
             <Link
               key={option.value}
-              href={adminListHref(option.value, keyword)}
+              href={adminListHref(option.value, keyword, selectedRisk)}
               className={
                 selectedStatus === option.value
                   ? "chip shrink-0 bg-ink text-white"
@@ -290,8 +361,25 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
           ))}
         </div>
 
+        <div className="mb-4 flex gap-2 overflow-x-auto pb-1">
+          {riskOptions.map((option) => (
+            <Link
+              key={option.value}
+              href={adminListHref(selectedStatus, keyword, option.value)}
+              className={
+                selectedRisk === option.value
+                  ? "chip shrink-0 bg-coral text-white"
+                  : "chip shrink-0 bg-white text-muted hover:text-ink"
+              }
+            >
+              {option.label} {riskCounts[option.value]}
+            </Link>
+          ))}
+        </div>
+
         <form action="/admin" className="mb-4 grid gap-3 sm:grid-cols-[1fr_auto]">
           <input type="hidden" name="status" value={selectedStatus} />
+          <input type="hidden" name="risk" value={selectedRisk} />
           <label className="relative">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" aria-hidden="true" />
             <input name="q" defaultValue={keyword} placeholder="搜索标题或内容" className="field pl-10" />

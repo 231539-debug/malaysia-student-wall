@@ -82,6 +82,8 @@ export type Database = {
           author_name: string | null;
           content: string;
           status: "pending" | "approved" | "rejected";
+          risk_level: "low" | "medium" | "high";
+          moderation_note: string | null;
           created_at: string;
         };
         Insert: {
@@ -90,6 +92,8 @@ export type Database = {
           author_name?: string | null;
           content: string;
           status?: "pending" | "approved" | "rejected";
+          risk_level?: "low" | "medium" | "high";
+          moderation_note?: string | null;
           created_at?: string;
         };
         Update: {
@@ -98,6 +102,8 @@ export type Database = {
           author_name?: string | null;
           content?: string;
           status?: "pending" | "approved" | "rejected";
+          risk_level?: "low" | "medium" | "high";
+          moderation_note?: string | null;
           created_at?: string;
         };
         Relationships: [
@@ -122,6 +128,9 @@ export type Database = {
           contact_info: string | null;
           is_anonymous: boolean;
           status: "pending" | "approved" | "rejected";
+          risk_level: "low" | "medium" | "high";
+          moderation_note: string | null;
+          report_count: number;
           is_pinned: boolean;
           view_count: number;
           image_urls: string[] | null;
@@ -139,6 +148,9 @@ export type Database = {
           contact_info?: string | null;
           is_anonymous?: boolean;
           status?: "pending" | "approved" | "rejected";
+          risk_level?: "low" | "medium" | "high";
+          moderation_note?: string | null;
+          report_count?: number;
           is_pinned?: boolean;
           view_count?: number;
           image_urls?: string[] | null;
@@ -156,6 +168,9 @@ export type Database = {
           contact_info?: string | null;
           is_anonymous?: boolean;
           status?: "pending" | "approved" | "rejected";
+          risk_level?: "low" | "medium" | "high";
+          moderation_note?: string | null;
+          report_count?: number;
           is_pinned?: boolean;
           view_count?: number;
           image_urls?: string[] | null;

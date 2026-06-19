@@ -81,16 +81,18 @@ export default async function SubmitPage({ searchParams }: SubmitPageProps) {
           <div className="surface rounded-3xl p-5 sm:p-8">
             {resolvedSearchParams.submitted === "1" ? (
               <div className="mb-5 rounded-3xl bg-mint/10 p-4 text-sm font-semibold leading-6 text-mint">
-                投稿已提交，审核通过后会展示。
+                投稿已提交，通常会在 12–24 小时内审核。请不要重复提交同一内容。
               </div>
             ) : null}
             {resolvedSearchParams.error ? (
               <div className="mb-5 rounded-3xl bg-coral/10 p-4 text-sm font-semibold leading-6 text-coral">
-                提交失败，请检查标题和内容长度后重试。
+                {resolvedSearchParams.error === "image"
+                  ? "图片上传失败，请确认最多 4 张、每张不超过 5MB，且格式为 JPG、PNG 或 WebP。"
+                  : "提交失败，请检查标题和内容长度后重试。"}
               </div>
             ) : null}
 
-            <form action={submitPost} className="grid gap-4">
+            <form action={submitPost} encType="multipart/form-data" className="grid gap-4">
               <div className="grid gap-2">
                 <label className="label" htmlFor="title">
                   标题
@@ -191,16 +193,23 @@ export default async function SubmitPage({ searchParams }: SubmitPageProps) {
               </div>
 
               <div className="grid gap-2">
-                <label className="label" htmlFor="image_urls">
-                  图片链接
+                <label className="label" htmlFor="images">
+                  上传图片
                 </label>
-                <textarea
-                  id="image_urls"
-                  name="image_urls"
-                  rows={3}
-                  placeholder="可选。一行一个图片 URL。租房、二手交易建议附图片链接。"
-                  className="field resize-none"
+                <input
+                  id="images"
+                  name="images"
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  multiple
+                  className="field cursor-pointer bg-white file:mr-4 file:rounded-full file:border-0 file:bg-ink file:px-4 file:py-2 file:text-sm file:font-black file:text-white"
                 />
+                <p className="text-xs font-semibold leading-5 text-muted">
+                  可选，最多 4 张，每张不超过 5MB。建议上传真实照片，不要上传 AI 假图、盗图、他人隐私照片、证件或银行卡照片。
+                </p>
+                <p className="text-xs font-semibold leading-5 text-coral">
+                  请勿上传他人隐私、证件、银行卡、聊天记录敏感信息或明显 AI 生成图片。
+                </p>
               </div>
 
               <div className="hidden" aria-hidden="true">

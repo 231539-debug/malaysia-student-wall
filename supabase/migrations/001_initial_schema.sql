@@ -37,6 +37,9 @@ create table posts (
   contact_info text,
   is_anonymous boolean not null default false,
   status moderation_status not null default 'pending',
+  risk_level text not null default 'low',
+  moderation_note text,
+  report_count integer not null default 0,
   is_pinned boolean not null default false,
   view_count integer not null default 0,
   image_urls text[],
@@ -50,6 +53,8 @@ create table comments (
   author_name text,
   content text not null,
   status moderation_status not null default 'pending',
+  risk_level text not null default 'low',
+  moderation_note text,
   created_at timestamptz not null default now()
 );
 
