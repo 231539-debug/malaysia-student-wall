@@ -1,3 +1,5 @@
+import { absoluteUrl } from "@/lib/site-url";
+
 type NewPostNotification = {
   title: string;
   category: string;
@@ -8,12 +10,6 @@ type NewPostNotification = {
   excerpt: string;
   adminUrl: string;
 };
-
-function siteBaseUrl() {
-  if (process.env.NEXT_PUBLIC_SITE_URL) return process.env.NEXT_PUBLIC_SITE_URL;
-  if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`;
-  return "";
-}
 
 export async function sendNewPostNotification(payload: NewPostNotification) {
   const webhookUrl = process.env.NOTIFICATION_WEBHOOK_URL;
@@ -41,6 +37,5 @@ export async function sendNewPostNotification(payload: NewPostNotification) {
 }
 
 export function adminReviewUrl() {
-  const baseUrl = siteBaseUrl();
-  return baseUrl ? `${baseUrl}/admin` : "/admin";
+  return absoluteUrl("/admin");
 }

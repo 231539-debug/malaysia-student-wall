@@ -13,8 +13,10 @@ import {
   updateCommentStatus,
   updatePostStatus
 } from "@/app/admin/actions";
+import { CopyXiaohongshuDraft } from "@/components/copy-xiaohongshu-draft";
 import { isAdminAuthenticated } from "@/lib/admin-auth";
 import { getAllAdminComments, getAllAdminPosts, getAnnouncements, getCategories, getCities, getSchools } from "@/lib/data";
+import { getSiteUrl } from "@/lib/site-url";
 import { hasSupabaseServiceRole } from "@/lib/supabase";
 import { excerpt, formatDate } from "@/lib/utils";
 import type { Comment, ModerationStatus, Post, RiskLevel } from "@/types/wall";
@@ -143,7 +145,7 @@ function AdminServiceRoleError() {
   );
 }
 
-function PostModerationCard({ post }: { post: Post }) {
+function PostModerationCard({ post, siteUrl }: { post: Post; siteUrl: string }) {
   const riskLevel = post.risk_level ?? "low";
 
   return (
@@ -218,6 +220,14 @@ function PostModerationCard({ post }: { post: Post }) {
             {post.is_pinned ? "取消置顶" : "置顶"}
           </button>
         </form>
+        <CopyXiaohongshuDraft
+          title={post.title}
+          content={post.content}
+          categoryName={post.category?.name}
+          schoolName={post.school?.name}
+          cityName={post.city?.name}
+          siteUrl={siteUrl}
+        />
         {post.status === "approved" ? (
           <Link href={`/post/${post.id}`} className="button-soft w-full py-2 sm:w-auto">
             <ExternalLink className="h-4 w-4" aria-hidden="true" />
@@ -285,6 +295,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
   const selectedStatus = normalizeStatus(resolvedSearchParams.status);
   const selectedRisk = normalizeRisk(resolvedSearchParams.risk);
   const keyword = resolvedSearchParams.q?.trim() ?? "";
+  const siteUrl = getSiteUrl();
 
   const [posts, comments, announcements, schools, cities, categories] = await Promise.all([
     getAllAdminPosts(),
@@ -391,7 +402,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
 
         <div className="grid gap-3 lg:grid-cols-2">
           {filteredPosts.length ? (
-            filteredPosts.map((post) => <PostModerationCard key={post.id} post={post} />)
+            filteredPosts.map((post) => <PostModerationCard key={post.id} post={post} siteUrl={siteUrl} />)
           ) : (
             <p className="rounded-2xl bg-white p-4 text-sm font-semibold text-muted">没有符合条件的帖子。</p>
           )}

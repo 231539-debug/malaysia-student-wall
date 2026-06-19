@@ -1,8 +1,10 @@
 import { notFound } from "next/navigation";
 import { Flag, MessageCircle, Send } from "lucide-react";
 import { reportPost, submitComment } from "@/app/actions";
+import { CopyLinkButton } from "@/components/copy-link-button";
 import { PageHero } from "@/components/page-hero";
 import { getComments, getPostById } from "@/lib/data";
+import { absoluteUrl } from "@/lib/site-url";
 import { formatDate } from "@/lib/utils";
 
 type PostDetailPageProps = {
@@ -23,6 +25,7 @@ export default async function PostDetailPage({ params, searchParams }: PostDetai
   const comments = await getComments(post.id);
   const commentAction = submitComment.bind(null, post.id);
   const reportAction = reportPost.bind(null, post.id);
+  const postUrl = absoluteUrl(`/post/${post.id}`);
 
   return (
     <div className="space-y-5">
@@ -59,6 +62,14 @@ export default async function PostDetailPage({ params, searchParams }: PostDetai
                 {post.is_anonymous ? "匿名同学" : post.author_name || "未填写昵称"}
                 {post.contact_info ? ` · 联系方式：${post.contact_info}` : ""}
               </p>
+            </div>
+
+            <div className="mt-4 rounded-3xl bg-mint/10 p-4">
+              <p className="text-sm font-black text-ink">分享这条信息</p>
+              <p className="mt-1 text-sm leading-6 text-muted">觉得这条信息有用？可以复制链接发给同学或群聊。</p>
+              <div className="mt-3 max-w-xs">
+                <CopyLinkButton label="复制帖子链接" url={postUrl} />
+              </div>
             </div>
           </div>
         </article>

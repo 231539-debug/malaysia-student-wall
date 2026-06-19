@@ -204,6 +204,9 @@ export default async function HomePage({ searchParams }: HomePageProps) {
               </div>
             ))}
           </div>
+          <p className="mt-3 rounded-2xl bg-mint/10 px-4 py-3 text-sm font-semibold leading-6 text-muted">
+            当前为试运行阶段，欢迎马来西亚留学生投稿租房、二手、课程组队、新生求助和生活避坑信息。所有内容审核后展示。
+          </p>
         </div>
       </section>
 

@@ -26,6 +26,7 @@ npm run dev
 ```bash
 NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+NEXT_PUBLIC_SITE_URL=https://malaysia-student-wall-1.vercel.app
 SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
 ADMIN_PASSWORD=change-this-admin-password
 ADMIN_NOTIFY_EMAIL=admin@example.com
@@ -33,6 +34,8 @@ NOTIFICATION_WEBHOOK_URL=
 ```
 
 `SUPABASE_SERVICE_ROLE_KEY` 只在服务端使用，用于投稿写入、评论写入和后台审核。不要暴露到浏览器端。
+
+`NEXT_PUBLIC_SITE_URL` 用于复制链接、后台小红书同步文案和通知里的后台审核链接。
 
 `NOTIFICATION_WEBHOOK_URL` 是可选的新投稿通知 webhook。未配置时不会发送通知，也不会影响投稿功能。
 
@@ -80,6 +83,7 @@ NOTIFICATION_WEBHOOK_URL=
 5. 在 Vercel Project Settings 的 Environment Variables 中填入 `.env.example` 对应变量：
    - `NEXT_PUBLIC_SUPABASE_URL`
    - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+   - `NEXT_PUBLIC_SITE_URL`
    - `SUPABASE_SERVICE_ROLE_KEY`
    - `ADMIN_PASSWORD`
 6. 部署即可。

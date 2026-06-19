@@ -1,7 +1,10 @@
 import { AlertTriangle, CheckCircle2, Send } from "lucide-react";
+import Link from "next/link";
 import { submitPost } from "@/app/actions";
+import { CopyLinkButton } from "@/components/copy-link-button";
 import { PageHero } from "@/components/page-hero";
 import { getCategories, getCities, getSchools } from "@/lib/data";
+import { getSiteUrl } from "@/lib/site-url";
 
 type SubmitPageProps = {
   searchParams: Promise<{
@@ -34,6 +37,7 @@ const categoryTips = [
 export default async function SubmitPage({ searchParams }: SubmitPageProps) {
   const resolvedSearchParams = await searchParams;
   const [categories, schools, cities] = await Promise.all([getCategories(), getSchools(), getCities()]);
+  const siteUrl = getSiteUrl();
 
   return (
     <div className="space-y-5">
@@ -80,8 +84,18 @@ export default async function SubmitPage({ searchParams }: SubmitPageProps) {
 
           <div className="surface rounded-3xl p-5 sm:p-8">
             {resolvedSearchParams.submitted === "1" ? (
-              <div className="mb-5 rounded-3xl bg-mint/10 p-4 text-sm font-semibold leading-6 text-mint">
-                投稿已提交，通常会在 12–24 小时内审核。请不要重复提交同一内容。
+              <div className="mb-5 rounded-3xl bg-mint/10 p-4 text-sm font-semibold leading-6 text-muted">
+                <p className="font-black text-mint">投稿已提交，通常会在 12–24 小时内审核。请不要重复提交同一内容。</p>
+                <div className="mt-3 grid gap-2 sm:grid-cols-3">
+                  <Link href="/" className="button-primary justify-center py-2 text-sm">
+                    返回首页
+                  </Link>
+                  <Link href="/submit" className="button-soft justify-center py-2 text-sm">
+                    继续投稿
+                  </Link>
+                  <CopyLinkButton label="分享给同学" url={siteUrl} className="button-soft w-full py-2 text-sm" />
+                </div>
+                <p className="mt-3 text-xs leading-5 text-muted">你可以复制本站链接发给同校同学，一起完善信息墙。</p>
               </div>
             ) : null}
             {resolvedSearchParams.error ? (
