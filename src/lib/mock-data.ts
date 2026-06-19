@@ -12,10 +12,16 @@ function daysAgo(days: number) {
 export const mockCities: City[] = [
   { id: "city-kl", name: "Kuala Lumpur", slug: "kuala-lumpur", created_at: daysAgo(30) },
   { id: "city-selangor", name: "Selangor", slug: "selangor", created_at: daysAgo(30) },
+  { id: "city-putrajaya", name: "Putrajaya", slug: "putrajaya", created_at: daysAgo(30) },
   { id: "city-penang", name: "Penang", slug: "penang", created_at: daysAgo(30) },
+  { id: "city-johor-state", name: "Johor", slug: "johor", created_at: daysAgo(30) },
   { id: "city-johor", name: "Johor Bahru", slug: "johor-bahru", created_at: daysAgo(30) },
   { id: "city-melaka", name: "Melaka", slug: "melaka", created_at: daysAgo(30) },
+  { id: "city-perak", name: "Perak", slug: "perak", created_at: daysAgo(30) },
   { id: "city-ipoh", name: "Ipoh", slug: "ipoh", created_at: daysAgo(30) },
+  { id: "city-kedah", name: "Kedah", slug: "kedah", created_at: daysAgo(30) },
+  { id: "city-negeri-sembilan", name: "Negeri Sembilan", slug: "negeri-sembilan", created_at: daysAgo(30) },
+  { id: "city-pahang", name: "Pahang", slug: "pahang", created_at: daysAgo(30) },
   { id: "city-sabah", name: "Sabah", slug: "sabah", created_at: daysAgo(30) },
   { id: "city-sarawak", name: "Sarawak", slug: "sarawak", created_at: daysAgo(30) }
 ];

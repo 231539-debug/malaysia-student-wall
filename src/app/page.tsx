@@ -138,6 +138,9 @@ export default async function HomePage({ searchParams }: HomePageProps) {
             <div>
               <p className="text-xs font-black uppercase tracking-[0.18em] text-muted">Popular Schools</p>
               <h2 className="text-2xl font-black tracking-normal text-ink">热门学校入口</h2>
+              <p className="mt-1 text-sm font-semibold leading-6 text-muted">
+                按留学生常见度、学校活跃度和信息需求排序，非官方排名。
+              </p>
             </div>
             <Link href="/schools" className="hidden text-sm font-black text-coral sm:inline-flex">
               全部学校
