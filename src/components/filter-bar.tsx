@@ -1,4 +1,5 @@
 import { Search, SlidersHorizontal } from "lucide-react";
+import { getSchoolDisplayName } from "@/lib/school-metadata";
 import type { Category, City, School } from "@/types/wall";
 
 type FilterBarProps = {
@@ -14,6 +15,12 @@ type FilterBarProps = {
 };
 
 export function FilterBar({ categories, schools, cities, selected }: FilterBarProps) {
+  const sortedSchools = [...schools].sort((a, b) => {
+    const aLabel = getSchoolDisplayName(a.slug, a.name);
+    const bLabel = getSchoolDisplayName(b.slug, b.name);
+    return aLabel.localeCompare(bLabel, "en");
+  });
+
   return (
     <section className="container-page">
       <form action="/" className="surface grid gap-3 rounded-3xl p-4 sm:grid-cols-2 lg:grid-cols-[1.3fr_1fr_1fr_1fr_auto]">
@@ -33,9 +40,9 @@ export function FilterBar({ categories, schools, cities, selected }: FilterBarPr
 
         <select name="school" defaultValue={selected?.school ?? ""} className="field" aria-label="学校筛选">
           <option value="">全部学校</option>
-          {schools.map((school) => (
+          {sortedSchools.map((school) => (
             <option key={school.id} value={school.slug}>
-              {school.name}
+              {getSchoolDisplayName(school.slug, school.name)}
             </option>
           ))}
         </select>

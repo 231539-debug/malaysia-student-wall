@@ -1,3 +1,4 @@
+import { schoolCatalog } from "@/lib/school-metadata";
 import type { Announcement, Category, City, Comment, Post, School } from "@/types/wall";
 
 const now = new Date();
@@ -32,80 +33,21 @@ export const mockCategories: Category[] = [
   { id: "cat-lost", name: "失物招领", slug: "lost-found", created_at: daysAgo(30) }
 ];
 
-export const mockSchools: School[] = [
-  {
-    id: "school-um",
-    name: "University of Malaya",
-    slug: "university-of-malaya",
-    city: "Kuala Lumpur",
-    logo_url: null,
-    description: "马来西亚历史悠久的综合型大学，校园生活与城市资源都很丰富。",
-    created_at: daysAgo(30)
-  },
-  {
-    id: "school-apu",
-    name: "Asia Pacific University",
-    slug: "asia-pacific-university",
-    city: "Kuala Lumpur",
-    logo_url: null,
-    description: "以科技、商科和国际学生社群闻名，位于吉隆坡科技园一带。",
-    created_at: daysAgo(30)
-  },
-  {
-    id: "school-sunway",
-    name: "Sunway University",
-    slug: "sunway-university",
-    city: "Selangor",
-    logo_url: null,
-    description: "靠近 Sunway City，生活便利，留学生社区活跃。",
-    created_at: daysAgo(30)
-  },
-  {
-    id: "school-monash",
-    name: "Monash University Malaysia",
-    slug: "monash-university-malaysia",
-    city: "Selangor",
-    logo_url: null,
-    description: "澳洲名校马来西亚校区，课程节奏紧凑，国际学生比例高。",
-    created_at: daysAgo(30)
-  },
-  {
-    id: "school-taylor",
-    name: "Taylor's University",
-    slug: "taylors-university",
-    city: "Selangor",
-    logo_url: null,
-    description: "湖畔校园氛围鲜明，商科、酒店管理和传媒相关信息需求较多。",
-    created_at: daysAgo(30)
-  },
-  {
-    id: "school-nottingham",
-    name: "University of Nottingham Malaysia",
-    slug: "university-of-nottingham-malaysia",
-    city: "Selangor",
-    logo_url: null,
-    description: "英式校园环境，适合集中展示租房、交通和课程互助信息。",
-    created_at: daysAgo(30)
-  },
-  {
-    id: "school-usm",
-    name: "Universiti Sains Malaysia",
-    slug: "universiti-sains-malaysia",
-    city: "Penang",
-    logo_url: null,
-    description: "位于槟城的重要公立大学，适合沉淀本地生活经验。",
-    created_at: daysAgo(30)
-  },
-  {
-    id: "school-utm",
-    name: "Universiti Teknologi Malaysia",
-    slug: "universiti-teknologi-malaysia",
-    city: "Johor Bahru",
-    logo_url: null,
-    description: "工程与技术方向突出，柔佛生活、交通和课程信息很实用。",
-    created_at: daysAgo(30)
-  }
-];
+export const mockSchools: School[] = schoolCatalog.map((school) => ({
+  id: `school-${school.slug}`,
+  name: school.name,
+  slug: school.slug,
+  city: school.city,
+  logo_url: null,
+  description: school.description,
+  created_at: daysAgo(30)
+}));
+
+function schoolBySlug(slug: string) {
+  const school = mockSchools.find((item) => item.slug === slug);
+  if (!school) throw new Error(`Missing mock school: ${slug}`);
+  return school;
+}
 
 export const mockAnnouncements: Announcement[] = [
   {
@@ -120,11 +62,11 @@ export const mockAnnouncements: Announcement[] = [
 export const mockPosts: Post[] = [
   {
     id: "post-1",
-    title: "Sunway 附近找女生室友，七月可入住",
+    title: "Sunway 附近找女生室友，7 月可入住",
     content:
       "房子在 BRT 附近，步行到学校大约 12 分钟。主卧已有一位女生，想找作息稳定、爱干净的室友一起续租。水电网平摊，可以看房。",
     category_id: "cat-rent",
-    school_id: "school-sunway",
+    school_id: "school-sunway-university",
     city_id: "city-selangor",
     author_name: "Lina",
     contact_info: "WeChat: example",
@@ -138,7 +80,7 @@ export const mockPosts: Post[] = [
     created_at: daysAgo(0),
     updated_at: daysAgo(0),
     category: mockCategories[0],
-    school: mockSchools[2],
+    school: schoolBySlug("sunway-university"),
     city: mockCities[1]
   },
   {
@@ -147,7 +89,7 @@ export const mockPosts: Post[] = [
     content:
       "我们已经有两个人，想找熟悉 SQL 或愿意一起推进项目的同学。目标是每周固定开一次会，提前把 milestone 做完。",
     category_id: "cat-course",
-    school_id: "school-apu",
+    school_id: "school-asia-pacific-university",
     city_id: "city-kl",
     author_name: null,
     contact_info: null,
@@ -159,16 +101,16 @@ export const mockPosts: Post[] = [
     created_at: daysAgo(1),
     updated_at: daysAgo(1),
     category: mockCategories[2],
-    school: mockSchools[1],
+    school: schoolBySlug("asia-pacific-university"),
     city: mockCities[0]
   },
   {
     id: "post-3",
-    title: "槟城新生开银行卡和电话卡经验",
+    title: "USM 新生开银行卡和电话卡经验",
     content:
       "刚到 USM 的同学可以先准备护照、offer letter、住址证明。电话卡建议对比校园附近几个套餐，别急着买长期合约。",
     category_id: "cat-freshman",
-    school_id: "school-usm",
+    school_id: "school-universiti-sains-malaysia",
     city_id: "city-penang",
     author_name: "阿远",
     contact_info: null,
@@ -180,7 +122,7 @@ export const mockPosts: Post[] = [
     created_at: daysAgo(2),
     updated_at: daysAgo(2),
     category: mockCategories[3],
-    school: mockSchools[6],
+    school: schoolBySlug("universiti-sains-malaysia"),
     city: mockCities[2]
   },
   {
@@ -189,7 +131,7 @@ export const mockPosts: Post[] = [
     content:
       "24 寸 1080p 显示器，适合宿舍外接电脑用。使用一年多，屏幕没有坏点，盒子还在。可在 KL Sentral 或学校附近面交。",
     category_id: "cat-trade",
-    school_id: "school-um",
+    school_id: "school-university-of-malaya",
     city_id: "city-kl",
     author_name: "M",
     contact_info: "Telegram: example",
@@ -203,16 +145,16 @@ export const mockPosts: Post[] = [
     created_at: daysAgo(3),
     updated_at: daysAgo(3),
     category: mockCategories[1],
-    school: mockSchools[0],
+    school: schoolBySlug("university-of-malaya"),
     city: mockCities[0]
   },
   {
     id: "post-5",
-    title: "柔佛周末拼车去新山吃饭",
+    title: "UTM 周末拼车去新山吃饭",
     content:
       "UTM 附近出发，周六下午想去 Johor Bahru 市区逛一下。已有两人，想找同校同学一起 AA 车费。",
     category_id: "cat-event",
-    school_id: "school-utm",
+    school_id: "school-universiti-teknologi-malaysia",
     city_id: "city-johor",
     author_name: "匿名同学",
     contact_info: null,
@@ -224,7 +166,7 @@ export const mockPosts: Post[] = [
     created_at: daysAgo(4),
     updated_at: daysAgo(4),
     category: mockCategories[5],
-    school: mockSchools[7],
+    school: schoolBySlug("universiti-teknologi-malaysia"),
     city: mockCities[3]
   }
 ];
