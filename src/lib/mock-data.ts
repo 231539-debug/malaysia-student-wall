@@ -1,3 +1,4 @@
+import { categoryCatalog } from "@/lib/category-metadata";
 import { schoolCatalog } from "@/lib/school-metadata";
 import type { Announcement, Category, City, Comment, Post, School } from "@/types/wall";
 
@@ -38,6 +39,17 @@ export const mockCategories: Category[] = [
   { id: "cat-job", name: "兼职实习", slug: "jobs-internship", created_at: daysAgo(30) },
   { id: "cat-lost", name: "失物招领", slug: "lost-found", created_at: daysAgo(30) }
 ];
+
+for (const category of categoryCatalog) {
+  if (!mockCategories.some((item) => item.slug === category.slug)) {
+    mockCategories.push({
+      id: `cat-${category.slug}`,
+      name: category.name,
+      slug: category.slug,
+      created_at: daysAgo(30)
+    });
+  }
+}
 
 export const mockSchools: School[] = schoolCatalog.map((school) => ({
   id: `school-${school.slug}`,

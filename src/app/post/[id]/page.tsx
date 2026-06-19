@@ -4,6 +4,8 @@ import { reportPost, submitComment } from "@/app/actions";
 import { CopyLinkButton } from "@/components/copy-link-button";
 import { PageHero } from "@/components/page-hero";
 import { getComments, getPostById } from "@/lib/data";
+import { getCategoryDisplayName } from "@/lib/category-metadata";
+import { getSchoolCatalogItem } from "@/lib/school-metadata";
 import { absoluteUrl } from "@/lib/site-url";
 import { formatDate } from "@/lib/utils";
 
@@ -26,6 +28,8 @@ export default async function PostDetailPage({ params, searchParams }: PostDetai
   const commentAction = submitComment.bind(null, post.id);
   const reportAction = reportPost.bind(null, post.id);
   const postUrl = absoluteUrl(`/post/${post.id}`);
+  const categoryName = post.category ? getCategoryDisplayName(post.category.slug, post.category.name) : null;
+  const schoolShortName = post.school ? getSchoolCatalogItem(post.school.slug)?.shortName ?? post.school.name : null;
 
   return (
     <div className="space-y-5">
@@ -47,14 +51,14 @@ export default async function PostDetailPage({ params, searchParams }: PostDetai
             </div>
           ) : null}
 
-          <div className="p-5 sm:p-8">
-            <div className="mb-5 flex flex-wrap gap-2">
-              {post.category ? <span className="chip bg-coral/10 text-coral">{post.category.name}</span> : null}
-              {post.school ? <span className="chip">{post.school.name}</span> : null}
+          <div className="p-4 sm:p-6">
+            <div className="mb-4 flex flex-wrap gap-1.5">
+              {post.category ? <span className="chip bg-coral/10 text-coral">{categoryName}</span> : null}
+              {post.school ? <span className="chip" title={post.school.name}>{schoolShortName}</span> : null}
               {post.city ? <span className="chip">{post.city.name}</span> : null}
             </div>
 
-            <div className="whitespace-pre-wrap text-base leading-8 text-ink">{post.content}</div>
+            <div className="whitespace-pre-wrap text-sm font-semibold leading-7 text-ink">{post.content}</div>
 
             <div className="mt-8 rounded-3xl bg-slate-50 p-4">
               <p className="text-sm font-black text-ink">发布者</p>

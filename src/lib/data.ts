@@ -7,6 +7,7 @@ import {
   mockPosts,
   mockSchools
 } from "@/lib/mock-data";
+import { getCategoryMeta, getEquivalentCategorySlugs } from "@/lib/category-metadata";
 import type { Announcement, Category, City, Comment, Post, PostFilters, School } from "@/types/wall";
 
 const postSelect = "*, category:categories(*), school:schools(*), city:cities(*)";
@@ -26,12 +27,20 @@ function filterMockPosts(filters: PostFilters = {}) {
 
   return sortPosts(
     mockPosts.filter((post) => {
+      const categorySlugs = filters.categorySlug ? getEquivalentCategorySlugs(filters.categorySlug) : [];
       if (filters.status && post.status !== filters.status) return false;
       if (!filters.status && post.status !== "approved") return false;
-      if (filters.categorySlug && post.category?.slug !== filters.categorySlug) return false;
+      if (filters.categorySlug && !categorySlugs.includes(post.category?.slug ?? "")) return false;
       if (filters.schoolSlug && post.school?.slug !== filters.schoolSlug) return false;
       if (filters.citySlug && post.city?.slug !== filters.citySlug) return false;
-      if (keyword && !`${post.title} ${post.content}`.toLowerCase().includes(keyword)) return false;
+      if (
+        keyword &&
+        !`${post.title} ${post.content} ${post.school?.name ?? ""} ${post.city?.name ?? ""} ${post.category?.name ?? ""}`
+          .toLowerCase()
+          .includes(keyword)
+      ) {
+        return false;
+      }
       return true;
     })
   );
@@ -49,10 +58,6 @@ export async function getPosts(filters: PostFilters = {}) {
 
   query = query.eq("status", filters.status ?? "approved");
 
-  if (filters.search) {
-    query = query.or(`title.ilike.%${filters.search}%,content.ilike.%${filters.search}%`);
-  }
-
   const { data, error } = await query.order("is_pinned", { ascending: false }).order("created_at", {
     ascending: false
   });
@@ -63,7 +68,17 @@ export async function getPosts(filters: PostFilters = {}) {
   }
 
   return (data as unknown as Post[]).filter((post) => {
-    if (filters.categorySlug && post.category?.slug !== filters.categorySlug) return false;
+    const categorySlugs = filters.categorySlug ? getEquivalentCategorySlugs(filters.categorySlug) : [];
+    const keyword = filters.search?.trim().toLowerCase();
+    if (
+      keyword &&
+      !`${post.title} ${post.content} ${post.school?.name ?? ""} ${post.city?.name ?? ""} ${post.category?.name ?? ""}`
+        .toLowerCase()
+        .includes(keyword)
+    ) {
+      return false;
+    }
+    if (filters.categorySlug && !categorySlugs.includes(post.category?.slug ?? "")) return false;
     if (filters.schoolSlug && post.school?.slug !== filters.schoolSlug) return false;
     if (filters.citySlug && post.city?.slug !== filters.citySlug) return false;
     return true;
@@ -209,7 +224,18 @@ export async function getCategories() {
 
 export async function getCategoryBySlug(slug: string) {
   const categories = await getCategories();
-  return categories.find((category) => category.slug === slug) ?? null;
+  const category = categories.find((category) => category.slug === slug);
+  if (category) return category;
+
+  const meta = getCategoryMeta(slug);
+  if (!meta) return null;
+
+  return {
+    id: `catalog-${meta.slug}`,
+    name: meta.name,
+    slug: meta.slug,
+    created_at: new Date().toISOString()
+  } satisfies Category;
 }
 
 export async function getAnnouncements(activeOnly = true) {

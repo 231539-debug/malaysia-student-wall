@@ -10,14 +10,14 @@ type PostFeedProps = {
 export function PostFeed({ posts, comments = [], emptyText = "暂时还没有帖子，欢迎成为第一个投稿的人。" }: PostFeedProps) {
   if (posts.length === 0) {
     return (
-      <div className="surface rounded-3xl p-8 text-center">
-        <p className="font-semibold text-muted">{emptyText}</p>
+      <div className="surface rounded-3xl p-5 text-center">
+        <p className="text-sm font-semibold text-muted">{emptyText}</p>
       </div>
     );
   }
 
   return (
-    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
       {posts.map((post) => (
         <PostCard
           key={post.id}

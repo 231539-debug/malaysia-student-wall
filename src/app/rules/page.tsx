@@ -77,6 +77,24 @@ export default function RulesPage() {
             );
           })}
         </div>
+
+        <div className="surface rounded-3xl p-5">
+          <h2 className="text-lg font-black tracking-normal text-ink">讨论区与匿名树洞</h2>
+          <div className="mt-4 grid gap-3 sm:grid-cols-2">
+            <div className="rounded-2xl bg-mint/10 p-4">
+              <p className="text-sm font-black text-mint">可以讨论</p>
+              <p className="mt-2 text-sm font-semibold leading-6 text-muted">
+                校园生活、课程体验、留学压力、情感/社交困惑、匿名求助和日常吐槽。
+              </p>
+            </div>
+            <div className="rounded-2xl bg-coral/10 p-4">
+              <p className="text-sm font-black text-coral">不可以发布</p>
+              <p className="mt-2 text-sm font-semibold leading-6 text-muted">
+                挂具体的人、曝光姓名/照片/聊天记录/联系方式、人肉搜索、造谣、辱骂攻击或恶意引战。
+              </p>
+            </div>
+          </div>
+        </div>
       </section>
     </div>
   );

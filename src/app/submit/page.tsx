@@ -80,6 +80,19 @@ export default async function SubmitPage({ searchParams }: SubmitPageProps) {
                 ))}
               </div>
             </div>
+            <div className="surface rounded-3xl p-4">
+              <h2 className="text-base font-black tracking-normal text-ink">拼车发布模板</h2>
+              <p className="mt-2 whitespace-pre-line text-xs font-semibold leading-5 text-muted">
+                出发地：
+                {"\n"}目的地：
+                {"\n"}日期：
+                {"\n"}时间：
+                {"\n"}人数：
+                {"\n"}预算：
+                {"\n"}是否已有车：
+                {"\n"}备注：
+              </p>
+            </div>
           </aside>
 
           <div className="surface rounded-3xl p-5 sm:p-8">

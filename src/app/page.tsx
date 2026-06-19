@@ -1,12 +1,11 @@
 import Link from "next/link";
-import { ArrowRight, BookOpen, Home, Router, ShieldCheck, ShoppingBag, Users } from "lucide-react";
-import { AnnouncementStrip } from "@/components/announcement-strip";
-import { FilterBar } from "@/components/filter-bar";
-import { PageHero } from "@/components/page-hero";
-import { PostFeed } from "@/components/post-feed";
+import { BriefcaseBusiness, Car, GraduationCap, HelpCircle, Home, MessageCircle, Search, ShoppingBag, Sparkles } from "lucide-react";
 import { PwaInstallTip } from "@/components/pwa-install-tip";
-import { getAnnouncements, getCategories, getCities, getComments, getPosts, getSchools } from "@/lib/data";
+import { PostFeed } from "@/components/post-feed";
+import { categoryCatalog } from "@/lib/category-metadata";
+import { getAnnouncements, getComments, getPosts, getSchools } from "@/lib/data";
 import { getSchoolCatalogItem, popularSchoolSlugs } from "@/lib/school-metadata";
+import type { School } from "@/types/wall";
 
 type HomePageProps = {
   searchParams: Promise<{
@@ -17,51 +16,35 @@ type HomePageProps = {
   }>;
 };
 
-const quickEntries = [
-  {
-    label: "租房找室友",
-    slug: "rent-roommate",
-    description: "找房、转租、合租、室友招募",
-    icon: Home
-  },
-  {
-    label: "二手交易",
-    slug: "second-hand",
-    description: "教材、家具、电器、闲置好物",
-    icon: ShoppingBag
-  },
-  {
-    label: "课程组队",
-    slug: "course-team",
-    description: "Assignment 小组、section 互助",
-    icon: BookOpen
-  },
-  {
-    label: "新生求助",
-    slug: "freshman-help",
-    description: "报到、住宿、银行卡、电话卡",
-    icon: Users
-  },
-  {
-    label: "生活避坑",
-    slug: "life-tips",
-    description: "本地生活经验和实用提醒",
-    icon: ShieldCheck
-  },
-  {
-    label: "宽带网络",
-    slug: "internet",
-    description: "宿舍网络、套餐、安装经验",
-    icon: Router
-  }
+const shortcuts = [
+  { label: "租房", href: "/category/rent-roommate", icon: Home },
+  { label: "二手", href: "/category/second-hand", icon: ShoppingBag },
+  { label: "拼车", href: "/category/daily-carpool", icon: Car },
+  { label: "课程", href: "/category/course-team", icon: GraduationCap },
+  { label: "新生", href: "/category/freshman-help", icon: HelpCircle },
+  { label: "实习", href: "/category/internship-referral", icon: BriefcaseBusiness },
+  { label: "讨论", href: "/category/campus-discussion", icon: MessageCircle },
+  { label: "更多", href: "/categories", icon: Sparkles }
 ];
+
+const hotSearches = [
+  { label: "今日拼车", href: "/?q=今日拼车" },
+  { label: "UPM 租房", href: "/?q=UPM%20租房" },
+  { label: "APU 实习", href: "/?q=APU%20实习" },
+  { label: "EMGS", href: "/?q=EMGS" },
+  { label: "二手显示器", href: "/?q=二手显示器" },
+  { label: "新生报到", href: "/?q=新生报到" },
+  { label: "选课经验", href: "/category/course-review" }
+];
+
+function categoryName(slug: string) {
+  return categoryCatalog.find((category) => category.slug === slug)?.name ?? slug;
+}
 
 export default async function HomePage({ searchParams }: HomePageProps) {
   const resolvedSearchParams = await searchParams;
-  const [categories, schools, cities, announcements, comments, posts] = await Promise.all([
-    getCategories(),
+  const [schools, announcements, comments, posts, carpoolPosts] = await Promise.all([
     getSchools(),
-    getCities(),
     getAnnouncements(),
     getComments(),
     getPosts({
@@ -69,162 +52,153 @@ export default async function HomePage({ searchParams }: HomePageProps) {
       categorySlug: resolvedSearchParams.category,
       schoolSlug: resolvedSearchParams.school,
       citySlug: resolvedSearchParams.city
-    })
+    }),
+    getPosts({ categorySlug: "daily-carpool" })
   ]);
 
   const popularSchools = popularSchoolSlugs
     .map((slug) => schools.find((school) => school.slug === slug))
-    .filter(Boolean)
-    .slice(0, 12);
+    .filter((school): school is School => Boolean(school))
+    .slice(0, 8);
+  const hasSearch = Boolean(resolvedSearchParams.q || resolvedSearchParams.category || resolvedSearchParams.school || resolvedSearchParams.city);
 
   return (
     <div className="space-y-4 sm:space-y-5">
       <section className="container-page">
-        <div className="flex flex-col gap-2 rounded-2xl border border-black/5 bg-white/70 px-3 py-2.5 text-sm font-semibold leading-5 text-muted shadow-soft backdrop-blur sm:flex-row sm:items-center sm:justify-between sm:px-4 sm:py-3">
-          <p>📌 精选投稿后续会同步到小红书｜欢迎关注站长账号，获取更多马来西亚留学生活信息</p>
-          <Link
-            href="https://www.xiaohongshu.com/user/profile/670a38f1000000001d021bb5"
-            target="_blank"
-            rel="noreferrer"
-            className="inline-flex shrink-0 items-center justify-center rounded-full bg-coral/10 px-3 py-1.5 text-xs font-black text-coral"
-          >
-            关注小红书
-          </Link>
+        <div className="mx-auto max-w-3xl rounded-[2rem] border border-black/5 bg-white/80 px-4 py-6 text-center shadow-soft backdrop-blur sm:px-6 sm:py-8">
+          <p className="text-xs font-black uppercase tracking-[0.18em] text-coral">Malaysia Student Wall</p>
+          <h1 className="mt-2 text-2xl font-black tracking-normal text-ink sm:text-3xl">全马留学生搜索入口</h1>
+          <p className="mt-2 text-xs font-semibold leading-5 text-muted sm:text-sm">搜租房、拼车、二手、课程、实习和新生问题</p>
+
+          <form action="/" className="mt-5 flex items-center gap-2 rounded-3xl border border-black/10 bg-white px-3 py-2 shadow-soft">
+            <Search className="h-4 w-4 shrink-0 text-muted" aria-hidden="true" />
+            <input
+              name="q"
+              defaultValue={resolvedSearchParams.q}
+              placeholder="搜索 UPM 租房、今日拼车、EMGS、二手显示器..."
+              className="min-h-10 flex-1 bg-transparent text-sm font-semibold outline-none placeholder:text-muted/70"
+            />
+            <button className="rounded-2xl bg-ink px-4 py-2 text-xs font-black text-white" type="submit">
+              搜索
+            </button>
+          </form>
+
+          <div className="mt-3 flex flex-wrap justify-center gap-1.5">
+            {hotSearches.map((item) => (
+              <Link key={item.label} href={item.href} className="rounded-full border border-black/5 bg-stone-50 px-2.5 py-1 text-[11px] font-bold text-muted">
+                {item.label}
+              </Link>
+            ))}
+          </div>
         </div>
       </section>
-
-      <PageHero
-        eyebrow="全马留学生互助社区"
-        title="Malaysia Student Wall"
-        description="按学校、城市和分类发现租房、二手、课程组队、新生求助与生活经验。第一版采用游客投稿，审核通过后展示。"
-        actionHref="/submit"
-        actionLabel="我要投稿"
-        meta={
-          <>
-            <span className="chip bg-coral/10 text-coral">全马信息流</span>
-            <span className="chip bg-mint/10 text-mint">审核后展示</span>
-            <span className="chip bg-sky/10 text-sky">手机端优先</span>
-          </>
-        }
-      />
 
       <PwaInstallTip />
 
       <section className="container-page">
-        <div className="surface rounded-3xl p-4 sm:p-5">
-          <div className="mb-3">
-            <p className="text-xs font-black uppercase tracking-[0.18em] text-muted">Quick Access</p>
-            <h2 className="text-xl font-black tracking-normal text-ink">常用入口</h2>
-            <p className="mt-1 text-xs font-semibold leading-5 text-muted">按需求快速查看信息</p>
-          </div>
-          <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
-            {quickEntries.map((entry) => {
-              const Icon = entry.icon;
-              return (
-                <Link
-                  key={entry.slug}
-                  href={`/category/${entry.slug}`}
-                  className="group flex min-h-20 flex-col items-center justify-center gap-2 rounded-2xl border border-black/5 bg-white px-2 py-3 text-center transition hover:border-coral/25 hover:bg-coral/5"
-                >
-                  <span className="rounded-2xl bg-coral/10 p-2 text-coral transition group-hover:bg-coral group-hover:text-white">
-                    <Icon className="h-4 w-4" aria-hidden="true" />
-                  </span>
-                  <span className="text-xs font-black leading-4 text-ink">{entry.label}</span>
-                </Link>
-              );
-            })}
-          </div>
-        </div>
-      </section>
-
-      <section className="container-page">
-        <div className="surface rounded-3xl p-4 sm:p-5">
-          <div className="mb-3 flex items-end justify-between gap-3">
-            <div>
-              <p className="text-xs font-black uppercase tracking-[0.18em] text-muted">Popular Schools</p>
-              <h2 className="text-xl font-black tracking-normal text-ink">热门学校入口</h2>
-              <p className="mt-1 text-xs font-semibold leading-5 text-muted">
-                按留学生常见度、学校活跃度和信息需求排序，非官方排名。
-              </p>
-            </div>
-            <Link href="/schools" className="hidden rounded-full bg-coral/10 px-3 py-1.5 text-xs font-black text-coral sm:inline-flex">
-              全部学校
+        <div className="mx-auto max-w-3xl">
+          <div className="mb-2 flex items-center justify-between px-1">
+            <h2 className="text-sm font-black tracking-normal text-ink">常用入口</h2>
+            <Link href="/categories" className="text-[11px] font-black text-coral">
+              全部分类
             </Link>
           </div>
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
-            {popularSchools.map((school, index) => {
-              if (!school) return null;
-              const catalogItem = getSchoolCatalogItem(school.slug);
-
+          <div className="grid grid-cols-4 gap-2">
+            {shortcuts.map((item) => {
+              const Icon = item.icon;
               return (
                 <Link
-                  key={school.id}
-                  href={`/school/${school.slug}`}
-                  className={`rounded-2xl border border-black/5 bg-white p-3 transition hover:border-sky/30 hover:bg-sky/5 ${
-                    index >= 8 ? "hidden lg:block" : ""
-                  }`}
+                  key={item.label}
+                  href={item.href}
+                  className="flex min-h-20 flex-col items-center justify-center gap-1.5 rounded-3xl border border-black/5 bg-white/85 px-2 py-3 text-center shadow-soft transition hover:border-coral/30 hover:bg-coral/5"
                 >
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="min-w-0">
-                      <div className="mb-2 flex flex-wrap gap-1.5">
-                        {catalogItem?.shortName ? (
-                          <span className="rounded-full bg-sky/10 px-2 py-1 text-[11px] font-black leading-none text-sky">
-                            {catalogItem.shortName}
-                          </span>
-                        ) : null}
-                        {school.city ? (
-                          <span className="rounded-full bg-stone-100 px-2 py-1 text-[11px] font-bold leading-none text-muted">
-                            {school.city}
-                          </span>
-                        ) : null}
-                      </div>
-                      <h3 className="line-clamp-2 text-xs font-black leading-4 text-ink sm:text-sm sm:leading-5">
-                        {catalogItem?.name ?? school.name}
-                      </h3>
-                    </div>
-                    <ArrowRight className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted" aria-hidden="true" />
-                  </div>
+                  <span className="rounded-2xl bg-coral/10 p-2 text-coral">
+                    <Icon className="h-4 w-4" aria-hidden="true" />
+                  </span>
+                  <span className="text-xs font-black text-ink">{item.label}</span>
                 </Link>
               );
             })}
           </div>
-          <Link href="/schools" className="button-soft mt-3 w-full py-2 text-sm sm:hidden">
-            查看全部学校
+        </div>
+      </section>
+
+      <section className="container-page">
+        <div className="mx-auto max-w-3xl rounded-2xl border border-mint/15 bg-mint/10 px-3 py-2 text-xs font-semibold leading-5 text-muted">
+          试运行中：所有投稿审核后展示。请勿发布隐私、诈骗、代写代考或人身攻击内容。
+        </div>
+      </section>
+
+      {hasSearch ? (
+        <section className="container-page">
+          <div className="mb-3 flex items-center justify-between gap-3">
+            <div>
+              <p className="text-[11px] font-black uppercase tracking-[0.16em] text-muted">Search</p>
+              <h2 className="text-lg font-black tracking-normal text-ink">搜索结果</h2>
+            </div>
+            <Link href="/discover" className="text-xs font-black text-coral">
+              去发现页
+            </Link>
+          </div>
+          <PostFeed posts={posts.slice(0, 8)} comments={comments} emptyText="暂时没有匹配内容，换个关键词试试。" />
+        </section>
+      ) : null}
+
+      <section className="container-page">
+        <div className="mb-3 flex items-center justify-between gap-3">
+          <div>
+            <p className="text-[11px] font-black uppercase tracking-[0.16em] text-muted">Carpool</p>
+            <h2 className="text-lg font-black tracking-normal text-ink">{categoryName("daily-carpool")}</h2>
+          </div>
+          <Link href="/category/daily-carpool" className="text-xs font-black text-coral">
+            查看更多
           </Link>
         </div>
+        <PostFeed posts={carpoolPosts.slice(0, 3)} comments={comments} emptyText="暂无拼车信息，发布一条试试。" />
       </section>
 
       <section className="container-page">
-        <div className="surface rounded-3xl p-4 sm:p-6">
-          <div className="mb-3 sm:mb-4">
-            <p className="text-xs font-black uppercase tracking-[0.18em] text-muted">About</p>
-            <h2 className="text-xl font-black tracking-normal text-ink">平台说明</h2>
-          </div>
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            {["全马留学生信息互助", "投稿需审核后展示", "非官方校园社区", "适合发布租房、二手、课程、新生求助和生活信息"].map((item) => (
-              <div key={item} className="rounded-2xl bg-white px-4 py-3 text-sm font-semibold leading-6 text-muted">
-                {item}
-              </div>
-            ))}
-          </div>
-          <p className="mt-3 rounded-2xl bg-mint/10 px-4 py-3 text-sm font-semibold leading-6 text-muted">
-            当前为试运行阶段，欢迎马来西亚留学生投稿租房、二手、课程组队、新生求助和生活避坑信息。所有内容审核后展示。
-          </p>
-        </div>
-      </section>
-
-      <FilterBar categories={categories} schools={schools} cities={cities} selected={resolvedSearchParams} />
-      <AnnouncementStrip announcements={announcements} />
-      <section className="container-page">
-        <div className="mb-4 flex items-end justify-between gap-3">
+        <div className="mb-3 flex items-center justify-between gap-3">
           <div>
-            <p className="text-xs font-black uppercase tracking-[0.18em] text-muted">Latest</p>
-            <h2 className="text-2xl font-black tracking-normal text-ink">最新信息流</h2>
+            <p className="text-[11px] font-black uppercase tracking-[0.16em] text-muted">Latest</p>
+            <h2 className="text-lg font-black tracking-normal text-ink">最新信息</h2>
           </div>
-          <p className="text-sm font-semibold text-muted">{posts.length} 条</p>
+          <Link href="/discover" className="text-xs font-black text-coral">
+            发现更多
+          </Link>
         </div>
-        <PostFeed posts={posts} comments={comments} />
+        <PostFeed posts={posts.slice(0, 5)} comments={comments} />
       </section>
+
+      <section className="container-page">
+        <div className="surface rounded-3xl p-4">
+          <div className="mb-3 flex items-center justify-between gap-3">
+            <h2 className="text-base font-black tracking-normal text-ink">热门学校</h2>
+            <Link href="/schools" className="text-xs font-black text-coral">
+              全部
+            </Link>
+          </div>
+          <div className="grid grid-cols-4 gap-2">
+            {popularSchools.map((school) => {
+              if (!school) return null;
+              const catalogItem = getSchoolCatalogItem(school.slug);
+              return (
+                <Link key={school.id} href={`/school/${school.slug}`} className="rounded-2xl bg-white px-2 py-3 text-center text-xs font-black text-ink">
+                  <span title={school.name}>{catalogItem?.shortName ?? school.name}</span>
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      {announcements[0] ? (
+        <section className="container-page">
+          <div className="rounded-2xl border border-black/5 bg-white/70 px-3 py-2 text-xs font-semibold leading-5 text-muted">
+            {announcements[0].title}：{announcements[0].content}
+          </div>
+        </section>
+      ) : null}
     </div>
   );
 }
