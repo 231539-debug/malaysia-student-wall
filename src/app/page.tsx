@@ -4,6 +4,7 @@ import { AnnouncementStrip } from "@/components/announcement-strip";
 import { FilterBar } from "@/components/filter-bar";
 import { PageHero } from "@/components/page-hero";
 import { PostFeed } from "@/components/post-feed";
+import { PwaInstallTip } from "@/components/pwa-install-tip";
 import { getAnnouncements, getCategories, getCities, getComments, getPosts, getSchools } from "@/lib/data";
 import { getSchoolCatalogItem, popularSchoolSlugs } from "@/lib/school-metadata";
 
@@ -106,6 +107,8 @@ export default async function HomePage({ searchParams }: HomePageProps) {
           </>
         }
       />
+
+      <PwaInstallTip />
 
       <section className="container-page">
         <div className="surface rounded-3xl p-4 sm:p-5">
