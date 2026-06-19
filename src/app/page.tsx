@@ -1,6 +1,9 @@
 import Link from "next/link";
 import { BriefcaseBusiness, Car, GraduationCap, HelpCircle, Home, MessageCircle, Search, ShoppingBag, Sparkles } from "lucide-react";
 import { PwaInstallTip } from "@/components/pwa-install-tip";
+import { getSchools } from "@/lib/data";
+import { getSchoolCatalogItem, popularSchoolSlugs } from "@/lib/school-metadata";
+import type { School } from "@/types/wall";
 
 const shortcuts = [
   { label: "茶水间", href: "/discuss", icon: MessageCircle },
@@ -23,7 +26,13 @@ const hotSearches = [
   { label: "选课经验", href: "/category/course-review" }
 ];
 
-export default function HomePage() {
+export default async function HomePage() {
+  const schools = await getSchools();
+  const popularSchools = popularSchoolSlugs
+    .map((slug) => schools.find((school) => school.slug === slug))
+    .filter((school): school is School => Boolean(school))
+    .slice(0, 8);
+
   return (
     <div className="space-y-4 sm:space-y-5">
       <section className="container-page">
@@ -77,6 +86,31 @@ export default function HomePage() {
                     <Icon className="h-3.5 w-3.5" aria-hidden="true" />
                   </span>
                   <span className="text-xs font-black text-ink">{item.label}</span>
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      <section className="container-page">
+        <div className="mx-auto max-w-3xl">
+          <div className="mb-2 flex items-center justify-between px-1">
+            <h2 className="text-sm font-black tracking-normal text-ink">热门学校</h2>
+            <Link href="/schools" className="text-[11px] font-black text-coral">
+              全部学校
+            </Link>
+          </div>
+          <div className="grid grid-cols-4 gap-2">
+            {popularSchools.map((school) => {
+              const catalogItem = getSchoolCatalogItem(school.slug);
+              return (
+                <Link
+                  key={school.id}
+                  href={`/school/${school.slug}`}
+                  className="rounded-2xl border border-black/5 bg-white/85 px-2 py-2 text-center text-xs font-black text-ink shadow-soft transition hover:border-coral/30 hover:bg-coral/5"
+                >
+                  <span title={school.name}>{catalogItem?.shortName ?? school.name}</span>
                 </Link>
               );
             })}
