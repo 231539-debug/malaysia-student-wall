@@ -68,8 +68,19 @@ ADMIN_PASSWORD=change-this-admin-password
 
 1. 将项目推送到 GitHub。
 2. 在 Vercel 导入仓库。
-3. 在 Vercel Project Settings 的 Environment Variables 中填入 `.env.example` 对应变量。
-4. 部署即可。
+3. Framework Preset 选择 `Next.js`。
+4. Build & Development Settings 使用：
+   - Install Command: `npm ci`
+   - Build Command: `npm run build`
+   - Output Directory: 保持默认
+5. 在 Vercel Project Settings 的 Environment Variables 中填入 `.env.example` 对应变量：
+   - `NEXT_PUBLIC_SUPABASE_URL`
+   - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+   - `SUPABASE_SERVICE_ROLE_KEY`
+   - `ADMIN_PASSWORD`
+6. 部署即可。
+
+如果线上 Supabase 数据库已经执行过 `001_initial_schema.sql`，后续补学校和城市数据时，请在 Supabase SQL Editor 执行 `supabase/migrations/002_upsert_schools_and_cities.sql`。
 
 ## 当前 MVP 说明
 
