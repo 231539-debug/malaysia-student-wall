@@ -14,6 +14,8 @@ insert into categories (name, slug) values
   ('实习经验', 'internship-experience'),
   ('实习内推', 'internship-referral'),
   ('校园讨论', 'campus-discussion'),
+  ('课程吐槽', 'course-rant'),
+  ('生活闲聊', 'life-chat'),
   ('匿名树洞', 'anonymous-treehole')
 on conflict (slug) do update
 set name = excluded.name;

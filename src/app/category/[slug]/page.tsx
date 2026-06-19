@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { PostFeed } from "@/components/post-feed";
-import { getCategoryMeta } from "@/lib/category-metadata";
+import { getCategoryMeta, isDiscussionCategorySlug } from "@/lib/category-metadata";
 import { getCategoryBySlug, getComments, getPosts } from "@/lib/data";
 
 type CategoryPageProps = {
@@ -17,6 +17,8 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
 
   const meta = getCategoryMeta(category.slug);
   const posts = await getPosts({ categorySlug: category.slug });
+  const isDiscussionArea = isDiscussionCategorySlug(category.slug);
+  const title = meta?.slug === "campus-discussion" ? "留学茶水间" : (meta?.name ?? category.name);
 
   return (
     <div className="space-y-4">
@@ -25,10 +27,15 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
           <div className="flex items-start justify-between gap-3">
             <div>
               <p className="text-xs font-black uppercase tracking-[0.16em] text-coral">Category</p>
-              <h1 className="mt-1 text-2xl font-black tracking-normal text-ink sm:text-3xl">{meta?.name ?? category.name}</h1>
+              <h1 className="mt-1 text-2xl font-black tracking-normal text-ink sm:text-3xl">{title}</h1>
               <p className="mt-2 text-sm font-semibold leading-6 text-muted">{meta?.description ?? "查看相关的全马留学生投稿，所有内容审核后展示。"}</p>
+              {isDiscussionArea ? (
+                <p className="mt-3 rounded-2xl bg-coral/10 px-3 py-2 text-xs font-semibold leading-5 text-coral">
+                  可以吐槽事情，不可以挂具体的人。请勿曝光姓名、照片、联系方式、聊天记录或进行人身攻击。
+                </p>
+              ) : null}
             </div>
-            <Link href="/submit" className="button-primary shrink-0 px-3 py-2 text-xs">
+            <Link href={`/submit?category=${meta?.slug ?? category.slug}`} className="button-primary shrink-0 px-3 py-2 text-xs">
               发布
             </Link>
           </div>

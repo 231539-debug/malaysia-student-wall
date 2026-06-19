@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { isDiscussionCategorySlug } from "@/lib/category-metadata";
 import { assessContentRisk } from "@/lib/moderation";
 import { adminReviewUrl, sendNewPostNotification } from "@/lib/notifications";
 import { createSupabaseClient, hasSupabaseServiceRole } from "@/lib/supabase";
@@ -61,6 +62,39 @@ function isMissingModerationColumn(error: unknown) {
   return /risk_level|moderation_note|report_count/.test(message);
 }
 
+function containsExternalLink(text: string) {
+  return /(https?:\/\/|www\.|t\.me\/|wa\.me\/|linktr\.ee\/|xiaohongshu\.com)/i.test(text);
+}
+
+function containsContactSignal(text: string) {
+  return /([A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}|(?:\+?60|0)1\d[\s-]?\d{3,4}[\s-]?\d{3,4})/i.test(text);
+}
+
+function shouldAutoApproveDiscussionPost({
+  categorySlug,
+  riskLevel,
+  contactInfo,
+  imageUrls,
+  title,
+  content
+}: {
+  categorySlug?: string | null;
+  riskLevel: "low" | "medium" | "high";
+  contactInfo: string | null;
+  imageUrls: string[] | null;
+  title: string;
+  content: string;
+}) {
+  return (
+    isDiscussionCategorySlug(categorySlug) &&
+    riskLevel === "low" &&
+    !contactInfo &&
+    !imageUrls?.length &&
+    !containsExternalLink(`${title}\n${content}`) &&
+    !containsContactSignal(`${title}\n${content}`)
+  );
+}
+
 async function uploadPostImages(postId: string, files: File[]) {
   if (!files.length) return null;
   if (!validateImageFiles(files)) redirect("/submit?error=image");
@@ -117,6 +151,7 @@ export async function submitPost(formData: FormData) {
     const cityId = nullableValue(formData, "city_id");
     const authorName = nullableValue(formData, "author_name");
     const contactInfo = nullableValue(formData, "contact_info");
+    const imageUrls = uploadedImageUrls ?? imageUrlsFromForm(formData);
     const basePayload = {
       id: postId,
       title,
@@ -128,25 +163,37 @@ export async function submitPost(formData: FormData) {
       contact_info: contactInfo,
       is_anonymous: formData.get("is_anonymous") === "on",
       status: "pending" as const,
-      image_urls: uploadedImageUrls ?? imageUrlsFromForm(formData)
+      image_urls: imageUrls
     };
 
     const [categoryResult, schoolResult, cityResult] = await Promise.all([
-      categoryId ? supabase?.from("categories").select("name").eq("id", categoryId).single() : Promise.resolve(null),
+      categoryId ? supabase?.from("categories").select("name, slug").eq("id", categoryId).single() : Promise.resolve(null),
       schoolId ? supabase?.from("schools").select("name").eq("id", schoolId).single() : Promise.resolve(null),
       cityId ? supabase?.from("cities").select("name").eq("id", cityId).single() : Promise.resolve(null)
     ]);
+    const autoApprove = shouldAutoApproveDiscussionPost({
+      categorySlug: categoryResult?.data?.slug,
+      riskLevel: risk.level,
+      contactInfo,
+      imageUrls,
+      title,
+      content
+    });
+    const postPayload = {
+      ...basePayload,
+      status: autoApprove ? ("approved" as const) : ("pending" as const)
+    };
 
     let { error } =
       (await supabase?.from("posts").insert({
-        ...basePayload,
+        ...postPayload,
         risk_level: risk.level,
-        moderation_note: risk.note,
+        moderation_note: autoApprove ? "低风险茶水间内容，已自动先展示；如被多次举报会自动隐藏复审。" : risk.note,
         report_count: 0
       })) ?? {};
 
     if (error && isMissingModerationColumn(error)) {
-      ({ error } = (await supabase?.from("posts").insert(basePayload)) ?? {});
+      ({ error } = (await supabase?.from("posts").insert(postPayload)) ?? {});
     }
 
     if (error) {
@@ -167,6 +214,8 @@ export async function submitPost(formData: FormData) {
   }
 
   revalidatePath("/");
+  revalidatePath("/discover");
+  revalidatePath("/discuss");
   redirect("/submit?submitted=1");
 }
 
@@ -233,24 +282,30 @@ export async function reportPost(postId: string, formData: FormData) {
       const { data: post } =
         (await supabase
           ?.from("posts")
-          .select("status, report_count, moderation_note")
+          .select("status, report_count, moderation_note, risk_level")
           .eq("id", postId)
           .single()) ?? {};
 
       if (post) {
         const nextReportCount = (post.report_count ?? 0) + 1;
         const repeatedReportNote = "该帖子被多次举报，已自动隐藏等待复审。";
-        const moderationNote =
-          nextReportCount >= 3 && !post.moderation_note?.includes(repeatedReportNote)
-            ? [post.moderation_note, repeatedReportNote].filter(Boolean).join("\n")
-            : post.moderation_note;
+        const highReportNote = "该帖子被 5 次以上举报，请重点复核。";
+        const moderationNotes = [post.moderation_note];
+        if (nextReportCount >= 3 && !post.moderation_note?.includes(repeatedReportNote)) {
+          moderationNotes.push(repeatedReportNote);
+        }
+        if (nextReportCount >= 5 && !post.moderation_note?.includes(highReportNote)) {
+          moderationNotes.push(highReportNote);
+        }
+        const moderationNote = moderationNotes.filter(Boolean).join("\n") || null;
 
         const { error: updateError } =
           (await supabase
             ?.from("posts")
             .update({
               report_count: nextReportCount,
-              status: nextReportCount >= 3 && post.status === "approved" ? "pending" : post.status,
+              status: nextReportCount >= 3 ? "pending" : post.status,
+              risk_level: nextReportCount >= 5 ? "high" : post.risk_level,
               moderation_note: moderationNote
             })
             .eq("id", postId)) ?? {};
@@ -260,6 +315,8 @@ export async function reportPost(postId: string, formData: FormData) {
         } else {
           revalidatePath("/admin");
           revalidatePath("/");
+          revalidatePath("/discover");
+          revalidatePath("/discuss");
           revalidatePath(`/post/${postId}`);
         }
       }

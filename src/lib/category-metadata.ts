@@ -34,8 +34,12 @@ export const categoryCatalog: CategoryMeta[] = [
   { name: "实习经验", shortName: "经验", slug: "internship-experience", description: "面试、简历、职场体验", group: "growth" },
   { name: "实习内推", shortName: "实习", slug: "internship-referral", description: "实习机会和内推信息", group: "growth" },
   { name: "校园讨论", shortName: "讨论", slug: "campus-discussion", description: "校园生活和课程讨论", group: "growth" },
+  { name: "课程吐槽", shortName: "吐槽", slug: "course-rant", description: "课程体验和学习压力", group: "growth" },
+  { name: "生活闲聊", shortName: "闲聊", slug: "life-chat", description: "留学日常和轻松聊天", group: "growth" },
   { name: "匿名树洞", shortName: "树洞", slug: "anonymous-treehole", description: "匿名求助和留学压力", group: "growth" }
 ];
+
+export const discussionCategorySlugs = ["campus-discussion", "anonymous-treehole", "course-rant", "life-chat"] as const;
 
 const legacySlugMap: Record<string, string> = {
   "campus-talk": "campus-discussion",
@@ -61,6 +65,11 @@ export function getCategoryMeta(slug?: string | null) {
   if (!slug) return null;
   const normalizedSlug = normalizeCategorySlug(slug);
   return categoryCatalog.find((category) => category.slug === normalizedSlug) ?? null;
+}
+
+export function isDiscussionCategorySlug(slug?: string | null) {
+  if (!slug) return false;
+  return (discussionCategorySlugs as readonly string[]).includes(normalizeCategorySlug(slug));
 }
 
 export function getCategoryDisplayName(slug: string, name: string, variant: "short" | "full" = "short") {

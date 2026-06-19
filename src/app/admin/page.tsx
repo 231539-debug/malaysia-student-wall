@@ -147,16 +147,25 @@ function AdminServiceRoleError() {
 
 function PostModerationCard({ post, siteUrl }: { post: Post; siteUrl: string }) {
   const riskLevel = post.risk_level ?? "low";
+  const reportCount = post.report_count ?? 0;
+  const cardClass =
+    reportCount >= 5
+      ? "rounded-3xl border border-coral/30 bg-coral/5 p-4"
+      : reportCount >= 3
+        ? "rounded-3xl border border-mango/40 bg-mango/10 p-4"
+        : "rounded-3xl border border-black/5 bg-white p-4";
 
   return (
-    <article className="rounded-3xl border border-black/5 bg-white p-4">
+    <article className={cardClass}>
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
             <span className="chip">{statusLabel(post.status)}</span>
             <span className={riskBadgeClass(riskLevel)}>风险 {riskLevel}</span>
             {post.is_pinned ? <span className="chip bg-mango/10 text-ink">已置顶</span> : null}
-            {(post.report_count ?? 0) > 0 ? <span className="chip bg-coral/10 text-coral">举报 {post.report_count}</span> : null}
+            {reportCount > 0 ? <span className="chip bg-coral/10 text-coral">举报 {reportCount}</span> : null}
+            {reportCount >= 3 ? <span className="chip bg-mango/20 text-ink">已自动隐藏</span> : null}
+            {reportCount >= 5 ? <span className="chip bg-coral/10 text-coral">重点复核</span> : null}
           </div>
           <h3 className="mt-3 text-base font-black tracking-normal text-ink">{post.title}</h3>
           <p className="mt-2 line-clamp-3 text-sm leading-6 text-muted">{excerpt(post.content, 140)}</p>
@@ -195,7 +204,7 @@ function PostModerationCard({ post, siteUrl }: { post: Post; siteUrl: string }) 
         </div>
         <div>
           <dt className="font-black text-ink">举报次数</dt>
-          <dd className="mt-1 font-semibold text-muted">{post.report_count ?? 0}</dd>
+          <dd className="mt-1 font-semibold text-muted">{reportCount}</dd>
         </div>
       </dl>
 

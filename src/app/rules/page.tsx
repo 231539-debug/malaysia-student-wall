@@ -80,11 +80,14 @@ export default function RulesPage() {
 
         <div className="surface rounded-3xl p-5">
           <h2 className="text-lg font-black tracking-normal text-ink">讨论区与匿名树洞</h2>
+          <p className="mt-2 rounded-2xl bg-coral/10 px-3 py-2 text-xs font-semibold leading-5 text-coral">
+            可以吐槽事情，不可以挂具体的人。请勿曝光姓名、照片、联系方式、聊天记录或进行人身攻击。
+          </p>
           <div className="mt-4 grid gap-3 sm:grid-cols-2">
             <div className="rounded-2xl bg-mint/10 p-4">
               <p className="text-sm font-black text-mint">可以讨论</p>
               <p className="mt-2 text-sm font-semibold leading-6 text-muted">
-                校园生活、课程体验、留学压力、情感/社交困惑、匿名求助和日常吐槽。
+                校园生活、课程体验、课程吐槽、生活闲聊、留学压力、情感/社交困惑、匿名求助和日常吐槽。
               </p>
             </div>
             <div className="rounded-2xl bg-coral/10 p-4">

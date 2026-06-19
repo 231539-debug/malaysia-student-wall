@@ -6,7 +6,7 @@ const items = [
   { href: "/discover", label: "发现", icon: Compass },
   { href: "/submit", label: "发布", icon: PenLine, primary: true },
   { href: "/category/daily-carpool", label: "拼车", icon: Car },
-  { href: "/category/campus-discussion", label: "讨论", icon: MessageCircle }
+  { href: "/discuss", label: "茶水间", icon: MessageCircle }
 ];
 
 export function BottomNav() {

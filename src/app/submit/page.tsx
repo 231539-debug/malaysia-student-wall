@@ -3,6 +3,7 @@ import Link from "next/link";
 import { submitPost } from "@/app/actions";
 import { CopyLinkButton } from "@/components/copy-link-button";
 import { PageHero } from "@/components/page-hero";
+import { isDiscussionCategorySlug } from "@/lib/category-metadata";
 import { getCategories, getCities, getSchools } from "@/lib/data";
 import { getSiteUrl } from "@/lib/site-url";
 
@@ -10,6 +11,7 @@ type SubmitPageProps = {
   searchParams: Promise<{
     submitted?: string;
     error?: string;
+    category?: string;
   }>;
 };
 
@@ -38,6 +40,9 @@ export default async function SubmitPage({ searchParams }: SubmitPageProps) {
   const resolvedSearchParams = await searchParams;
   const [categories, schools, cities] = await Promise.all([getCategories(), getSchools(), getCities()]);
   const siteUrl = getSiteUrl();
+  const selectedCategory = categories.find((category) => category.slug === resolvedSearchParams.category);
+  const isTeaRoomPost = isDiscussionCategorySlug(resolvedSearchParams.category);
+  const isCarpoolPost = resolvedSearchParams.category === "daily-carpool";
 
   return (
     <div className="space-y-5">
@@ -72,6 +77,14 @@ export default async function SubmitPage({ searchParams }: SubmitPageProps) {
             <div className="surface rounded-3xl p-5">
               <h2 className="text-lg font-black tracking-normal text-ink">分类填写提示</h2>
               <div className="mt-3 grid gap-3">
+                {isTeaRoomPost ? (
+                  <div className="rounded-2xl border border-coral/10 bg-coral/5 p-3">
+                    <p className="text-sm font-black text-ink">留学茶水间</p>
+                    <p className="mt-1 text-xs font-semibold leading-5 text-muted">
+                      可以分享校园生活、课程体验、留学压力、日常吐槽或匿名求助。请不要曝光具体个人隐私。
+                    </p>
+                  </div>
+                ) : null}
                 {categoryTips.map((tip) => (
                   <div key={tip.title} className="rounded-2xl border border-black/5 bg-white p-3">
                     <p className="text-sm font-black text-ink">{tip.title}</p>
@@ -92,6 +105,7 @@ export default async function SubmitPage({ searchParams }: SubmitPageProps) {
                 {"\n"}是否已有车：
                 {"\n"}备注：
               </p>
+              {isCarpoolPost ? <p className="mt-2 text-xs font-black text-coral">已从拼车入口进入，建议直接按模板填写。</p> : null}
             </div>
           </aside>
 
@@ -158,7 +172,7 @@ export default async function SubmitPage({ searchParams }: SubmitPageProps) {
                   <label className="label" htmlFor="category_id">
                     分类
                   </label>
-                  <select id="category_id" name="category_id" className="field" required>
+                  <select id="category_id" name="category_id" className="field" required defaultValue={selectedCategory?.id ?? ""}>
                     <option value="">选择分类</option>
                     {categories.map((category) => (
                       <option key={category.id} value={category.id}>
