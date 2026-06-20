@@ -2,7 +2,6 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { isDiscussionCategorySlug } from "@/lib/category-metadata";
 import { assessContentRisk } from "@/lib/moderation";
 import { adminReviewUrl, sendNewPostNotification } from "@/lib/notifications";
 import { createSupabaseClient, hasSupabaseServiceRole } from "@/lib/supabase";
@@ -62,37 +61,8 @@ function isMissingModerationColumn(error: unknown) {
   return /risk_level|moderation_note|report_count/.test(message);
 }
 
-function containsExternalLink(text: string) {
-  return /(https?:\/\/|www\.|t\.me\/|wa\.me\/|linktr\.ee\/|xiaohongshu\.com)/i.test(text);
-}
-
-function containsContactSignal(text: string) {
-  return /([A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}|(?:\+?60|0)1\d[\s-]?\d{3,4}[\s-]?\d{3,4})/i.test(text);
-}
-
-function shouldAutoApproveDiscussionPost({
-  categorySlug,
-  riskLevel,
-  contactInfo,
-  imageUrls,
-  title,
-  content
-}: {
-  categorySlug?: string | null;
-  riskLevel: "low" | "medium" | "high";
-  contactInfo: string | null;
-  imageUrls: string[] | null;
-  title: string;
-  content: string;
-}) {
-  return (
-    isDiscussionCategorySlug(categorySlug) &&
-    riskLevel === "low" &&
-    !contactInfo &&
-    !imageUrls?.length &&
-    !containsExternalLink(`${title}\n${content}`) &&
-    !containsContactSignal(`${title}\n${content}`)
-  );
+function shouldAutoApprovePost(riskLevel: "low" | "medium" | "high") {
+  return riskLevel === "low";
 }
 
 async function uploadPostImages(postId: string, files: File[]) {
@@ -171,14 +141,7 @@ export async function submitPost(formData: FormData) {
       schoolId ? supabase?.from("schools").select("name").eq("id", schoolId).single() : Promise.resolve(null),
       cityId ? supabase?.from("cities").select("name").eq("id", cityId).single() : Promise.resolve(null)
     ]);
-    const autoApprove = shouldAutoApproveDiscussionPost({
-      categorySlug: categoryResult?.data?.slug,
-      riskLevel: risk.level,
-      contactInfo,
-      imageUrls,
-      title,
-      content
-    });
+    const autoApprove = shouldAutoApprovePost(risk.level);
     const postPayload = {
       ...basePayload,
       status: autoApprove ? ("approved" as const) : ("pending" as const)
@@ -188,7 +151,7 @@ export async function submitPost(formData: FormData) {
       (await supabase?.from("posts").insert({
         ...postPayload,
         risk_level: risk.level,
-        moderation_note: autoApprove ? "低风险茶水间内容，已自动先展示；如被多次举报会自动隐藏复审。" : risk.note,
+        moderation_note: autoApprove ? "低风险内容，已自动展示；如被多次举报会自动隐藏复审。" : risk.note,
         report_count: 0
       })) ?? {};
 
