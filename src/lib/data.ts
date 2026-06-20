@@ -12,6 +12,14 @@ import type { Announcement, Category, City, Comment, Post, PostFilters, School }
 
 const postSelect = "*, category:categories(*), school:schools(*), city:cities(*)";
 
+export type SiteAnalyticsSummary = {
+  isAvailable: boolean;
+  onlineCount: number;
+  todayViews: number;
+  todaySessions: number;
+  popularPages: Array<{ path: string; views: number }>;
+};
+
 function sortPosts(posts: Post[]) {
   return [...posts].sort((a, b) => {
     if (a.is_pinned !== b.is_pinned) {
@@ -259,4 +267,64 @@ export async function getAnnouncements(activeOnly = true) {
   if (error || !data) return mockAnnouncements;
 
   return data as Announcement[];
+}
+
+function malaysiaDayStart() {
+  const now = new Date();
+  const malaysiaNow = new Date(now.toLocaleString("en-US", { timeZone: "Asia/Kuala_Lumpur" }));
+  malaysiaNow.setHours(0, 0, 0, 0);
+  const offsetMs = 8 * 60 * 60 * 1000;
+  return new Date(malaysiaNow.getTime() - offsetMs).toISOString();
+}
+
+function emptyAnalytics(isAvailable = false): SiteAnalyticsSummary {
+  return {
+    isAvailable,
+    onlineCount: 0,
+    todayViews: 0,
+    todaySessions: 0,
+    popularPages: []
+  };
+}
+
+export async function getSiteAnalyticsSummary(): Promise<SiteAnalyticsSummary> {
+  if (!hasSupabaseServiceRole()) return emptyAnalytics(false);
+
+  const supabase = createSupabaseClient(true);
+  if (!supabase) return emptyAnalytics(false);
+
+  const todayStart = malaysiaDayStart();
+  const onlineCutoff = new Date(Date.now() - 2 * 60 * 1000).toISOString();
+
+  const [onlineResult, viewsCountResult, todayRowsResult] = await Promise.all([
+    supabase.from("online_sessions").select("session_id", { count: "exact", head: true }).gte("last_seen", onlineCutoff),
+    supabase.from("page_views").select("id", { count: "exact", head: true }).gte("created_at", todayStart),
+    supabase.from("page_views").select("path, session_id").gte("created_at", todayStart).limit(5000)
+  ]);
+
+  if (onlineResult.error || viewsCountResult.error || todayRowsResult.error || !todayRowsResult.data) {
+    console.warn("Site analytics tables are not ready", onlineResult.error ?? viewsCountResult.error ?? todayRowsResult.error);
+    return emptyAnalytics(false);
+  }
+
+  const sessions = new Set<string>();
+  const pageCounts = new Map<string, number>();
+
+  for (const row of todayRowsResult.data) {
+    if (row.session_id) sessions.add(row.session_id);
+    pageCounts.set(row.path, (pageCounts.get(row.path) ?? 0) + 1);
+  }
+
+  const popularPages = Array.from(pageCounts.entries())
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5)
+    .map(([path, views]) => ({ path, views }));
+
+  return {
+    isAvailable: true,
+    onlineCount: onlineResult.count ?? 0,
+    todayViews: viewsCountResult.count ?? 0,
+    todaySessions: sessions.size,
+    popularPages
+  };
 }

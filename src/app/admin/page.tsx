@@ -15,7 +15,16 @@ import {
 } from "@/app/admin/actions";
 import { CopyXiaohongshuDraft } from "@/components/copy-xiaohongshu-draft";
 import { isAdminAuthenticated } from "@/lib/admin-auth";
-import { getAllAdminComments, getAllAdminPosts, getAnnouncements, getCategories, getCities, getSchools } from "@/lib/data";
+import {
+  getAllAdminComments,
+  getAllAdminPosts,
+  getAnnouncements,
+  getCategories,
+  getCities,
+  getSchools,
+  getSiteAnalyticsSummary,
+  type SiteAnalyticsSummary
+} from "@/lib/data";
 import { getSiteUrl } from "@/lib/site-url";
 import { hasSupabaseServiceRole } from "@/lib/supabase";
 import { excerpt, formatDate } from "@/lib/utils";
@@ -291,6 +300,58 @@ function CommentModerationCard({ comment }: { comment: Comment }) {
   );
 }
 
+function AnalyticsOverview({ summary }: { summary: SiteAnalyticsSummary }) {
+  const metrics = [
+    { label: "当前在线", value: summary.onlineCount },
+    { label: "今日浏览量", value: summary.todayViews },
+    { label: "今日访问 session", value: summary.todaySessions }
+  ];
+
+  return (
+    <section className="surface rounded-3xl p-5">
+      <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h2 className="text-xl font-black tracking-normal text-ink">数据概览</h2>
+          <p className="mt-1 text-sm font-semibold text-muted">
+            轻量统计，不记录 IP、姓名、邮箱或联系方式。
+          </p>
+        </div>
+        {!summary.isAvailable ? <span className="chip bg-mango/20 text-ink">等待执行 007 SQL</span> : null}
+      </div>
+
+      <div className="grid gap-3 sm:grid-cols-3">
+        {metrics.map((metric) => (
+          <div key={metric.label} className="rounded-2xl border border-black/5 bg-white p-4">
+            <p className="text-xs font-black uppercase tracking-[0.14em] text-muted">{metric.label}</p>
+            <p className="mt-2 text-2xl font-black tracking-normal text-ink">{metric.value}</p>
+          </div>
+        ))}
+      </div>
+
+      <div className="mt-4 rounded-2xl border border-black/5 bg-white p-4">
+        <div className="mb-3 flex items-center justify-between gap-3">
+          <p className="text-sm font-black text-ink">今日热门页面</p>
+          <span className="text-xs font-semibold text-muted">Top 5</span>
+        </div>
+        {summary.popularPages.length ? (
+          <div className="space-y-2">
+            {summary.popularPages.map((page) => (
+              <div key={page.path} className="flex items-center justify-between gap-3 text-xs font-semibold">
+                <span className="min-w-0 truncate text-muted">{page.path}</span>
+                <span className="chip shrink-0">{page.views}</span>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="text-xs font-semibold text-muted">
+            {summary.isAvailable ? "今天还没有统计数据。" : "执行 007_site_analytics.sql 后会显示热门页面。"}
+          </p>
+        )}
+      </div>
+    </section>
+  );
+}
+
 export default async function AdminPage({ searchParams }: AdminPageProps) {
   const resolvedSearchParams = await searchParams;
   if (!(await isAdminAuthenticated())) {
@@ -306,13 +367,14 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
   const keyword = resolvedSearchParams.q?.trim() ?? "";
   const siteUrl = getSiteUrl();
 
-  const [posts, comments, announcements, schools, cities, categories] = await Promise.all([
+  const [posts, comments, announcements, schools, cities, categories, analyticsSummary] = await Promise.all([
     getAllAdminPosts(),
     getAllAdminComments(),
     getAnnouncements(false),
     getSchools(),
     getCities(),
-    getCategories()
+    getCategories(),
+    getSiteAnalyticsSummary()
   ]);
 
   const pendingComments = comments.filter((comment) => comment.status === "pending");
@@ -355,6 +417,8 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
           </form>
         </div>
       </div>
+
+      <AnalyticsOverview summary={analyticsSummary} />
 
       <section className="surface rounded-3xl p-5">
         <div className="mb-4 flex flex-wrap items-end justify-between gap-3">

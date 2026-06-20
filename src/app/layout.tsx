@@ -1,7 +1,10 @@
 import type { Metadata, Viewport } from "next";
+import { Analytics } from "@vercel/analytics/next";
+import { Suspense } from "react";
 import "@/app/globals.css";
 import { BottomNav } from "@/components/bottom-nav";
 import { PwaRegister } from "@/components/pwa-register";
+import { SiteAnalyticsTracker } from "@/components/site-analytics-tracker";
 import { SiteHeader } from "@/components/site-header";
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://malaysia-student-wall-1.vercel.app";
@@ -67,9 +70,13 @@ export default function RootLayout({
     <html lang="zh-CN">
       <body>
         <PwaRegister />
+        <Suspense fallback={null}>
+          <SiteAnalyticsTracker />
+        </Suspense>
         <SiteHeader />
         <main className="pb-24 pt-4 sm:pb-12">{children}</main>
         <BottomNav />
+        <Analytics />
       </body>
     </html>
   );

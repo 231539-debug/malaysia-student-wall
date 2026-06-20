@@ -116,6 +116,54 @@ export type Database = {
           }
         ];
       };
+      online_sessions: {
+        Row: {
+          session_id: string;
+          path: string | null;
+          last_seen: string;
+          created_at: string;
+        };
+        Insert: {
+          session_id: string;
+          path?: string | null;
+          last_seen?: string;
+          created_at?: string;
+        };
+        Update: {
+          session_id?: string;
+          path?: string | null;
+          last_seen?: string;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      page_views: {
+        Row: {
+          id: string;
+          path: string;
+          referrer: string | null;
+          user_agent: string | null;
+          session_id: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          path: string;
+          referrer?: string | null;
+          user_agent?: string | null;
+          session_id?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          path?: string;
+          referrer?: string | null;
+          user_agent?: string | null;
+          session_id?: string | null;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
       posts: {
         Row: {
           id: string;
